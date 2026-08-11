@@ -1,0 +1,11 @@
+{
+  "uuid": "material-you-gnome@karim",
+  "name": "Material You GNOME",
+  "description": "Barre en îlots Material 3 et widgets de bureau — horloge, média avec paroles synchronisées, calendrier, météo, ressources, horloges mondiales, carte utilisateur. Couleurs dérivées du fond d'écran par material-you-gnome.",
+  "shell-version": [
+    "46"
+  ],
+  "version": 1,
+  "url": "https://github.com/pedrokarim/material-you-gnome",
+  "settings-schema": "org.gnome.shell.extensions.material-you-gnome"
+}

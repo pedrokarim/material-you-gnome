@@ -1,0 +1,447 @@
+/* Feuille de style de material-you-gnome — GÉNÉRÉE, ne pas éditer.
+ * Source: {{image}}  ·  Mode: {{mode}}
+ *
+ * Feuille de style de l'extension : GNOME Shell la charge à l'activation et la
+ * décharge à la désactivation, donc `wallset` n'a qu'à recycler l'extension
+ * pour que les nouvelles couleurs prennent.
+ *
+ * St ne gère ni `var()` ni les fonctions de couleur : tous les hex sont inlinés
+ * par matugen, comme dans le thème Shell.
+ */
+
+/* --- Îlots ------------------------------------------------------------------
+ * Le panel garde un fond opaque : le rendre transparent laisserait le contenu
+ * des fenêtres maximisées transparaître sous la barre. Les îlots ressortent
+ * par contraste de conteneur plutôt que par flottement.
+ * Pour le rendu « flottant » d'illogical-impulse, passer la règle ci-dessous
+ * à `transparent`.
+ */
+#panel.myg-panel {
+    background-color: {{colors.surface.default.hex}};
+}
+
+#panel.myg-panel .myg-island {
+    background-color: {{colors.surface_container_high.default.hex}};
+    border-radius: 12px;
+    margin-top: 4px;
+    margin-bottom: 4px;
+    padding-left: 4px;
+    padding-right: 4px;
+}
+
+/* Une zone sans enfant ne doit pas dessiner de pilule. */
+#panel.myg-panel .myg-island-empty {
+    background-color: transparent;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+#panel.myg-panel .panel-button {
+    color: {{colors.on_surface.default.hex}};
+    border-radius: 10px;
+}
+
+#panel.myg-panel .panel-button:hover,
+#panel.myg-panel .panel-button:focus {
+    background-color: {{colors.surface_container_highest.default.hex}};
+}
+
+#panel.myg-panel .panel-button:active,
+#panel.myg-panel .panel-button:checked {
+    background-color: {{colors.primary_container.default.hex}};
+    color: {{colors.on_primary_container.default.hex}};
+}
+
+/* --- Pilules de workspaces --------------------------------------------------
+ * On recolore l'indicateur natif de GNOME 46 plutôt que d'en ajouter un.
+ * Yaru donne la même couleur à tous les points : la distinction actif/inactif
+ * (longueur et opacité) est posée par le JS du Shell, donc elle survit à cette
+ * règle. Une seule couleur suffit.
+ */
+#panel.myg-panel .panel-button#panelActivities .workspace-dot {
+    background-color: {{colors.primary.default.hex}};
+}
+
+/* --- Widgets bureau ---------------------------------------------------------
+ * L'horloge se dessine en Cairo, qui ne lit pas le CSS. Elle récupère donc ses
+ * couleurs via St.ThemeNode.lookup_color sur ces propriétés maison : la palette
+ * reste définie à un seul endroit, ici.
+ */
+.myg-clock {
+    -myg-clock-face: {{colors.primary_container.default.hex}};
+    -myg-clock-ink: {{colors.on_primary_container.default.hex}};
+    -myg-clock-hand: {{colors.on_primary_container.default.hex}};
+    -myg-clock-accent: {{colors.primary.default.hex}};
+    /* Le rond du mois est volontairement plus sourd que celui du jour :
+       sur la référence, le jour ressort en accent, le mois s'efface. */
+    -myg-clock-chip: {{colors.surface_container_highest.default.hex}};
+    -myg-clock-chip-ink: {{colors.on_surface_variant.default.hex}};
+}
+
+/* Cartes bureau (ressources, météo) : rectangles arrondis, donc du St pur —
+ * seule l'horloge avait besoin de Cairo, pour son bord festonné. */
+.myg-card {
+    background-color: {{colors.surface_container.default.hex}};
+    color: {{colors.on_surface.default.hex}};
+    border-radius: 22px;
+    padding: 14px 18px;
+}
+
+.myg-card-icon {
+    icon-size: 18px;
+    color: {{colors.on_primary_container.default.hex}};
+    background-color: {{colors.primary_container.default.hex}};
+    border-radius: 999px;
+    padding: 7px;
+}
+
+.myg-card-value {
+    font-size: 1.7em;
+    font-weight: bold;
+    color: {{colors.on_surface.default.hex}};
+    padding-top: 6px;
+}
+
+.myg-card-label {
+    font-size: 0.85em;
+    color: {{colors.on_surface_variant.default.hex}};
+}
+
+.myg-res-row {
+    spacing: 14px;
+}
+
+/* Carte utilisateur : même largeur que la météo, qui mène la colonne droite. */
+.myg-usercard {
+    min-width: 470px;
+    max-width: 470px;
+    spacing: 16px;
+}
+
+.myg-usercard-avatar {
+    border-radius: 999px;
+    background-color: {{colors.primary_container.default.hex}};
+    color: {{colors.on_primary_container.default.hex}};
+}
+
+.myg-usercard-text {
+    spacing: 2px;
+}
+
+.myg-usercard-name {
+    font-size: 1.05em;
+    font-weight: bold;
+    color: {{colors.on_surface.default.hex}};
+}
+
+.myg-usercard-sub {
+    font-size: 0.85em;
+    color: {{colors.on_surface_variant.default.hex}};
+}
+
+.myg-usercard-actions {
+    spacing: 8px;
+    padding-top: 10px;
+}
+
+.myg-usercard-button {
+    color: {{colors.on_primary_container.default.hex}};
+    background-color: {{colors.primary_container.default.hex}};
+    border-radius: 999px;
+    padding: 8px;
+}
+
+.myg-usercard-button:hover,
+.myg-usercard-button:focus {
+    background-color: {{colors.primary.default.hex}};
+    color: {{colors.on_primary.default.hex}};
+}
+
+/* 3 × (100 + 36 de padding) + 2 × 14 d'écart = 436 px : la largeur de la carte
+   météo, qui mène la colonne droite. */
+.myg-res-card {
+    min-width: 80px;
+}
+
+.myg-weather {
+    min-width: 470px;
+    max-width: 470px;
+    spacing: 16px;
+}
+
+.myg-weather-temp {
+    font-size: 2.4em;
+    font-weight: bold;
+    color: {{colors.on_surface.default.hex}};
+}
+
+.myg-weather-desc {
+    font-size: 1em;
+    color: {{colors.on_surface.default.hex}};
+}
+
+.myg-weather-place {
+    font-size: 0.85em;
+    color: {{colors.on_surface_variant.default.hex}};
+    padding-top: 4px;
+}
+
+.myg-weather-icon {
+    icon-size: 34px;
+    color: {{colors.on_primary_container.default.hex}};
+    background-color: {{colors.primary_container.default.hex}};
+    border-radius: 999px;
+    padding: 14px;
+}
+
+/* Bulle de citation, sous l'horloge. Elle ne prend pas la largeur commune de la
+   colonne : chez eux c'est une pastille qui épouse son texte. */
+.myg-quote {
+    background-color: {{colors.surface_container.default.hex}};
+    border-radius: 999px;
+    padding: 7px 16px;
+    spacing: 8px;
+}
+
+.myg-quote-icon {
+    font-family: 'Material Symbols Rounded';
+    font-size: 1.1em;
+    color: {{colors.primary.default.hex}};
+}
+
+.myg-quote-text {
+    font-size: 0.95em;
+    color: {{colors.on_surface.default.hex}};
+}
+
+/* Carte média du bureau */
+/* Colonne de gauche : largeur commune. Les cartes s'empilent avec le même bord
+   gauche ; sans largeur partagée, leurs bords droits partent en escalier
+   (424 px contre 316 px avant unification). */
+.myg-media-card,
+.myg-calendar {
+    min-width: 372px;
+    max-width: 372px;
+}
+
+/* La carte est une colonne (rangée d'infos, puis paroles) : son `spacing`
+   sépare donc ces deux blocs, pas la pochette du texte. C'est la rangée qui
+   porte l'écart horizontal — sans quoi le titre vient coller la pochette.
+   L'écart vertical est assuré par le padding du bloc de paroles. */
+.myg-media-card {
+    spacing: 0;
+}
+
+.myg-media-row {
+    spacing: 16px;
+}
+
+
+.myg-media-art {
+    border-radius: 16px;
+    color: {{colors.on_surface_variant.default.hex}};
+}
+
+.myg-media-text {
+    spacing: 2px;
+    max-width: 300px;   /* borne l'ellipsage des titres longs */
+}
+
+.myg-media-title {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: {{colors.on_surface.default.hex}};
+}
+
+.myg-media-artist {
+    font-size: 0.9em;
+    color: {{colors.on_surface_variant.default.hex}};
+}
+
+.myg-media-controls {
+    spacing: 6px;
+    padding-top: 8px;
+}
+
+.myg-media-button {
+    color: {{colors.on_primary_container.default.hex}};
+    background-color: {{colors.primary_container.default.hex}};
+    border-radius: 999px;
+    padding: 7px;
+}
+
+.myg-media-button:hover {
+    background-color: {{colors.primary.default.hex}};
+    color: {{colors.on_primary.default.hex}};
+}
+
+/* Calendrier */
+.myg-cal-header {
+    font-size: 1.05em;
+    font-weight: bold;
+    color: {{colors.on_surface.default.hex}};
+    padding-bottom: 14px;
+}
+
+.myg-cal-grid {
+    spacing-rows: 4px;
+    spacing-columns: 4px;
+}
+
+.myg-cal-dow {
+    font-size: 0.8em;
+    color: {{colors.on_surface_variant.default.hex}};
+    min-width: 44px;
+    padding: 4px 0;
+    text-align: center;
+}
+
+/* Cellule quasi carrée (44 × ~42) : c'est la condition pour que le marqueur du
+   jour soit un rond et non un ovale. Avec 34 × 27, `border-radius: 999px`
+   donnait une pilule couchée. */
+.myg-cal-day {
+    font-size: 0.9em;
+    color: {{colors.on_surface.default.hex}};
+    min-width: 44px;
+    padding: 12px 0;
+    text-align: center;
+    border-radius: 999px;
+}
+
+.myg-cal-day.today {
+    background-color: {{colors.primary.default.hex}};
+    color: {{colors.on_primary.default.hex}};
+    font-weight: bold;
+}
+
+/* --- Média (top bar) -------------------------------------------------------- */
+.myg-media {
+    padding-left: 6px;
+    padding-right: 6px;
+}
+
+.myg-media-box {
+    spacing: 6px;
+}
+
+.myg-media-icon {
+    icon-size: 14px;
+    color: {{colors.primary.default.hex}};
+}
+
+.myg-media-label {
+    font-size: 0.9em;
+    color: {{colors.on_surface.default.hex}};
+}
+
+.myg-usercard-quip {
+    spacing: 5px;
+    padding-top: 2px;
+}
+
+/* Paroles synchronisées. La ligne courante ressort par la couleur et le gras ;
+   les voisines restent lisibles mais en retrait. */
+.myg-media-lyrics {
+    padding-top: 12px;
+    spacing: 3px;
+}
+
+.myg-media-lyric {
+    font-size: 0.9em;
+    color: {{colors.on_surface_variant.default.hex}};
+}
+
+.myg-media-lyric.current {
+    font-weight: bold;
+    color: {{colors.primary.default.hex}};
+}
+
+/* --- Horloge numérique (variante) ------------------------------------------ */
+/* Pas d'espacement négatif : St ne le gère pas, et il faisait disparaître le
+   second nombre. Le rapprochement des deux lignes passe par la hauteur de
+   ligne des étiquettes elles-mêmes. */
+.myg-digital {
+    spacing: 0;
+}
+
+.myg-digital-hours,
+.myg-digital-minutes {
+    font-size: 4.6em;
+    font-weight: bold;
+    color: {{colors.on_surface.default.hex}};
+}
+
+.myg-digital-hours { padding-bottom: 0; }
+.myg-digital-minutes { padding-top: 0; }
+
+.myg-digital-date {
+    font-size: 1em;
+    color: {{colors.on_surface_variant.default.hex}};
+    padding-top: 18px;
+}
+
+/* --- Horloges mondiales ----------------------------------------------------- */
+.myg-worldclocks {
+    min-width: 470px;
+    max-width: 470px;
+}
+
+.myg-wc-time {
+    font-size: 2.1em;
+    font-weight: bold;
+    color: {{colors.on_surface.default.hex}};
+}
+
+.myg-wc-date {
+    font-size: 0.85em;
+    color: {{colors.on_surface_variant.default.hex}};
+    padding-bottom: 12px;
+}
+
+.myg-wc-grid {
+    spacing-rows: 8px;
+    spacing-columns: 8px;
+}
+
+.myg-wc-cell {
+    background-color: {{colors.surface_container_high.default.hex}};
+    border-radius: 16px;
+    padding: 8px 12px;
+    min-width: 140px;
+    spacing: 2px;
+}
+
+.myg-wc-head { spacing: 8px; }
+
+.myg-wc-name {
+    font-size: 0.8em;
+    color: {{colors.on_surface_variant.default.hex}};
+}
+
+.myg-wc-offset {
+    font-size: 0.7em;
+    color: {{colors.on_surface_variant.default.hex}};
+}
+
+.myg-wc-value {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: {{colors.on_surface.default.hex}};
+}
+
+/* --- Navigation du calendrier ----------------------------------------------- */
+.myg-cal-headerbox {
+    spacing: 6px;
+    padding-bottom: 6px;
+}
+
+.myg-cal-nav {
+    color: {{colors.on_surface_variant.default.hex}};
+    border-radius: 999px;
+    padding: 6px;
+}
+
+.myg-cal-nav:hover {
+    background-color: {{colors.primary_container.default.hex}};
+    color: {{colors.on_primary_container.default.hex}};
+}
