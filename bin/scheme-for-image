@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+"""Choisit un schéma matugen selon le « colorfulness » de l'image.
+
+Repris de scripts/colors/scheme_for_image.py d'illogical-impulse, qui applique
+la métrique de Hasler & Süsstrunk (2003) : une image peu colorée donne une
+palette plus sobre (scheme-neutral), une image riche garde scheme-tonal-spot.
+
+L'original dépend d'OpenCV + numpy, absents ici. PIL suffit : on réduit à
+128 px de côté (16 k pixels), et le calcul en Python pur est instantané.
+
+    scheme-for-image IMAGE                 -> nom du schéma
+    scheme-for-image IMAGE --colorfulness  -> la valeur brute
+"""
+
+import sys
+from math import sqrt
+
+try:
+    from PIL import Image
+except ImportError:
+    print("scheme-tonal-spot")
+    sys.exit(1)
+
+# Au-delà de ce seuil l'image est jugée « colorée ». Valeur d'illogical-impulse.
+COLORFULNESS_THRESHOLD = 40.0
+MAX_DIM = 128
+
+
+def _mean_std(values):
+    n = len(values)
+    if n == 0:
+        return 0.0, 0.0
+    mean = sum(values) / n
+    var = sum((v - mean) ** 2 for v in values) / n
+    return mean, sqrt(var)
+
+
+def colorfulness(img):
+    """Métrique de Hasler & Süsstrunk sur les axes opposés rouge-vert / jaune-bleu."""
+    rg = []
+    yb = []
+    for r, g, b in img.getdata():
+        rg.append(abs(r - g))
+        yb.append(abs(0.5 * (r + g) - b))
+
+    mean_rg, std_rg = _mean_std(rg)
+    mean_yb, std_yb = _mean_std(yb)
+    return sqrt(std_rg**2 + std_yb**2) + 0.3 * sqrt(mean_rg**2 + mean_yb**2)
+
+
+def load(path):
+    img = Image.open(path)
+    # Aplatit toute transparence et normalise les modes exotiques (P, LA, CMYK).
+    if img.mode != "RGB":
+        img = img.convert("RGB")
+    w, h = img.size
+    if max(w, h) > MAX_DIM:
+        scale = MAX_DIM / max(w, h)
+        img = img.resize((max(1, int(w * scale)), max(1, int(h * scale))), Image.LANCZOS)
+    return img
+
+
+def main():
+    args = sys.argv[1:]
+    raw = "--colorfulness" in args
+    args = [a for a in args if a != "--colorfulness"]
+
+    if not args:
+        print("scheme-tonal-spot")
+        return 1
+
+    try:
+        img = load(args[0])
+    except Exception:
+        # Format illisible : on retombe sur le schéma par défaut plutôt que
+        # d'interrompre le pipeline de wallset.
+        print("scheme-tonal-spot")
+        return 1
+
+    c = colorfulness(img)
+    if raw:
+        print(f"{c:.2f}")
+    else:
+        print("scheme-neutral" if c < COLORFULNESS_THRESHOLD else "scheme-tonal-spot")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

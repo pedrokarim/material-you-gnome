@@ -1,0 +1,38 @@
+# material-you-gnome — configuration matugen
+#
+# On ne délègue PAS le fond d'écran à matugen (set_wallpaper = false) :
+# `wallset` le pose lui-même via gsettings, pour gérer picture-uri ET
+# picture-uri-dark en une passe.
+
+[config]
+set_wallpaper = false
+reload_apps = false
+
+# Fichier canonique : toutes les cibles complexes (thème shell, VS Code,
+# gnome-terminal) lisent ces variables au lieu d'avoir leur propre template.
+[templates.colors]
+input_path = 'templates/colors.sh'
+output_path = '~/.cache/material-you-gnome/colors.sh'
+
+[templates.gtk4]
+input_path = 'templates/gtk4.css'
+output_path = '~/.config/gtk-4.0/gtk.css'
+
+[templates.gtk3]
+input_path = 'templates/gtk3.css'
+output_path = '~/.config/gtk-3.0/gtk.css'
+
+[templates.ghostty]
+input_path = 'templates/ghostty-colors'
+output_path = '~/.config/ghostty/matugen-colors'
+
+[templates.btop]
+input_path = 'templates/btop.theme'
+output_path = '~/.config/btop/themes/material-you.theme'
+
+# Extension GNOME Shell (couche 2). La sortie va dans le projet, pas dans
+# ~/.local/share/gnome-shell/extensions : l'extension y est un lien symbolique
+# vers ce dossier, donc c'est le même fichier des deux côtés.
+[templates.extension]
+input_path = 'templates/extension-stylesheet.css'
+output_path = 'extension/material-you-gnome@karim/stylesheet.css'

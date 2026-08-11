@@ -1,0 +1,166 @@
+#!/usr/bin/env bash
+# wallset — pose un fond d'écran et recolore tout le système depuis ses teintes.
+#
+#   wallset ~/Pictures/foo.jpg     pose l'image et régénère la palette
+#   wallset                        régénère depuis le fond d'écran courant
+#   wallset --random               tire au sort dans ~/Pictures/Wallpapers
+#   wallset --color '#8a4b2f'      palette depuis une couleur, sans image
+#   wallset --mode dark|light      force le mode (défaut: suit GNOME)
+#   wallset --scheme <nom>         schéma matugen (défaut: auto)
+#   wallset --no-wallpaper         recolore sans toucher au fond d'écran
+#
+# Schémas: auto, scheme-content, scheme-expressive, scheme-fidelity,
+#          scheme-fruit-salad, scheme-monochrome, scheme-neutral, scheme-rainbow,
+#          scheme-tonal-spot, scheme-vibrant
+#
+# `auto` mesure le « colorfulness » de l'image (métrique Hasler & Süsstrunk) et
+# choisit scheme-neutral pour les images ternes, scheme-tonal-spot sinon.
+
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
+CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/material-you-gnome"
+WALLPAPER_DIR="${WALLSET_DIR:-$HOME/Pictures/Wallpapers}"
+export PATH="$HOME/.cargo/bin:$PATH"
+
+IMAGE=""; MODE=""; SCHEME="auto"; PREFER="saturation"; COLOR=""
+SET_WALLPAPER=1; RANDOM_PICK=0
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --random)       RANDOM_PICK=1; shift ;;
+    --color)        COLOR="$2"; shift 2 ;;
+    --mode)         MODE="$2"; shift 2 ;;
+    --scheme)       SCHEME="$2"; shift 2 ;;
+    --prefer)       PREFER="$2"; shift 2 ;;
+    --no-wallpaper) SET_WALLPAPER=0; shift ;;
+    # Le bloc de commentaires en tête sert d'aide : on s'arrête à la première
+    # ligne qui n'en est pas une, plutôt que de coder en dur un numéro de ligne.
+    -h|--help)      awk 'NR>1 { if (!/^#/) exit; sub(/^# ?/, ""); print }' "$0"; exit 0 ;;
+    -*)             echo "wallset: option inconnue $1" >&2; exit 1 ;;
+    *)              IMAGE="$1"; shift ;;
+  esac
+done
+
+command -v matugen >/dev/null || { echo "wallset: matugen introuvable (cargo install matugen)" >&2; exit 1; }
+
+# --- Source : couleur explicite, ou image -------------------------------------
+if [ -n "$COLOR" ]; then
+  # Palette dérivée d'une couleur seule : aucune image en jeu, donc pas de fond
+  # d'écran à poser ni de schéma à déduire.
+  case "$COLOR" in
+    '#'*) : ;;
+    *)    COLOR="#$COLOR" ;;
+  esac
+  echo "$COLOR" | grep -qiE '^#[0-9a-f]{6}$' \
+    || { echo "wallset: couleur invalide: $COLOR (attendu #rrggbb)" >&2; exit 1; }
+  SET_WALLPAPER=0
+  [ "$SCHEME" = auto ] && SCHEME="scheme-tonal-spot"
+else
+  if [ "$RANDOM_PICK" = 1 ]; then
+    [ -d "$WALLPAPER_DIR" ] || { echo "wallset: $WALLPAPER_DIR n'existe pas" >&2; exit 1; }
+    IMAGE=$(find "$WALLPAPER_DIR" -type f \
+              \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) \
+              | shuf -n1)
+    [ -n "$IMAGE" ] || { echo "wallset: aucune image dans $WALLPAPER_DIR" >&2; exit 1; }
+  fi
+
+  if [ -z "$IMAGE" ]; then
+    # Pas d'argument : on reprend le fond d'écran courant.
+    IMAGE=$(gsettings get org.gnome.desktop.background picture-uri | tr -d "'")
+    IMAGE="${IMAGE#file://}"
+    IMAGE=$(printf '%b' "${IMAGE//%/\\x}")   # décode l'URI (%20 etc.)
+    SET_WALLPAPER=0
+  fi
+
+  [ -f "$IMAGE" ] || { echo "wallset: image introuvable: $IMAGE" >&2; exit 1; }
+  IMAGE=$(readlink -f "$IMAGE")
+
+  # `auto` : le schéma se déduit de l'image (voir bin/scheme-for-image).
+  if [ "$SCHEME" = auto ]; then
+    SCHEME=$("$ROOT/bin/scheme-for-image" "$IMAGE" 2>/dev/null || echo scheme-tonal-spot)
+    echo "▸ schéma déduit : $SCHEME (colorfulness $("$ROOT/bin/scheme-for-image" "$IMAGE" --colorfulness 2>/dev/null))"
+  fi
+fi
+
+# --- Mode clair / sombre ------------------------------------------------------
+if [ -z "$MODE" ]; then
+  case "$(gsettings get org.gnome.desktop.interface color-scheme)" in
+    *prefer-dark*) MODE=dark ;;
+    *)             MODE=light ;;
+  esac
+fi
+
+if [ -n "$COLOR" ]; then
+  echo "▸ couleur: $COLOR"
+else
+  echo "▸ image  : $IMAGE"
+fi
+echo "▸ mode   : $MODE   schéma: $SCHEME   prefer: $PREFER"
+
+# --- Fond d'écran -------------------------------------------------------------
+if [ "$SET_WALLPAPER" = 1 ]; then
+  URI="file://$IMAGE"
+  gsettings set org.gnome.desktop.background picture-uri "$URI"
+  gsettings set org.gnome.desktop.background picture-uri-dark "$URI"
+  gsettings set org.gnome.desktop.background picture-options 'zoom'
+  gsettings set org.gnome.desktop.screensaver picture-uri "$URI" 2>/dev/null || true
+fi
+
+# --- Génération de la palette -------------------------------------------------
+mkdir -p "$CACHE" "$HOME/.config/btop/themes" "$HOME/.config/gtk-4.0" "$HOME/.config/gtk-3.0"
+cd "$ROOT"
+if [ -n "$COLOR" ]; then
+  # `--prefer` n'a de sens que pour extraire une teinte d'une image.
+  matugen -c matugen.toml color hex "$COLOR" \
+          --mode "$MODE" --type "$SCHEME" --quiet
+else
+  matugen -c matugen.toml image "$IMAGE" \
+          --mode "$MODE" --type "$SCHEME" --prefer "$PREFER" --quiet
+fi
+
+# --- Base GTK cohérente avec le mode ------------------------------------------
+# Les @define-color ne peuvent pas atteindre tout le CSS compilé de Yaru ; on
+# part donc de la variante Yaru la plus proche pour limiter les incohérences.
+if [ "$MODE" = dark ]; then
+  gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
+  gsettings set org.gnome.desktop.interface gtk-theme 'Yaru-dark'
+else
+  gsettings set org.gnome.desktop.interface color-scheme 'default'
+  gsettings set org.gnome.desktop.interface gtk-theme 'Yaru'
+fi
+
+# --- Hooks --------------------------------------------------------------------
+for h in build-shell-theme apply-gnome-terminal apply-vscode; do
+  if [ -x "$ROOT/hooks/$h.sh" ]; then
+    "$ROOT/hooks/$h.sh" || echo "  ⚠ hook $h a échoué (on continue)" >&2
+  fi
+done
+
+# --- Rechargement du thème Shell ---------------------------------------------
+# Sur X11 on ne peut pas relancer gnome-shell sans casser la session. Mais
+# basculer le réglage user-theme force le Shell à relire sa feuille de style :
+# passer par '' puis revenir suffit à recharger sans redémarrage.
+if gsettings list-schemas | grep -q '^org.gnome.shell.extensions.user-theme$'; then
+  gsettings set org.gnome.shell.extensions.user-theme name ''
+  sleep 0.3
+  gsettings set org.gnome.shell.extensions.user-theme name 'MaterialYou'
+  echo "▸ thème Shell rechargé"
+else
+  echo "  ⚠ extension user-theme absente — thème Shell non appliqué" >&2
+fi
+
+# --- Rechargement de material-you-gnome -----------------------------------------
+# GNOME Shell ne lit le stylesheet d'une extension qu'à son activation :
+# la recycler est le seul moyen de reprendre les nouvelles couleurs.
+if gnome-extensions list --enabled 2>/dev/null | grep -qx 'material-you-gnome@karim'; then
+  gnome-extensions disable material-you-gnome@karim
+  sleep 0.3
+  gnome-extensions enable material-you-gnome@karim
+  echo "▸ material-you-gnome rechargée"
+fi
+
+# shellcheck source=/dev/null
+source "$CACHE/colors.sh"
+echo "▸ palette : primary $MY_PRIMARY · surface $MY_SURFACE · accent-on $MY_ON_PRIMARY"
+echo "✓ terminé — les apps GTK déjà ouvertes doivent être relancées."
