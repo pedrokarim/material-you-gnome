@@ -1,0 +1,381 @@
+#!/usr/bin/env -S gjs -m
+/* wallpicker — sélecteur de fonds d'écran, local et en ligne.
+ *
+ * Reprend modules/ii/wallpaperSelector/ d'illogical-impulse : une grille locale,
+ * une grille en ligne avec recherche, filtre de résolution et pagination. Un clic
+ * pose l'image ET régénère toute la palette — c'est `wallset` qui s'en charge,
+ * donc rien n'est dupliqué ici.
+ *
+ * Application GTK4 séparée plutôt que surface du Shell : St n'offre ni grille
+ * scrollable ni chargement d'image asynchrone, là où GTK4 donne FlowBox,
+ * ScrolledWindow et Gdk.Texture pour rien.
+ *
+ * Fournisseur en ligne : wallhaven, seul des trois utilisés par la référence à
+ * fonctionner sans compte (Unsplash et Pexels lisent une clé d'API dans un
+ * trousseau). Pureté verrouillée sur « sfw ».
+ */
+
+import Adw from 'gi://Adw';
+import Gtk from 'gi://Gtk?version=4.0';
+import Gdk from 'gi://Gdk?version=4.0';
+import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
+import Soup from 'gi://Soup?version=3.0';
+import GObject from 'gi://GObject';
+import System from 'system';
+
+const APP_ID = 're.ascencia.wallpicker';
+
+const THUMB_W = 260;
+const THUMB_H = 146;   // 16:9
+
+const RESOLUTIONS = [
+    ['1080p', '1920x1080'],
+    ['2K', '2560x1440'],
+    ['4K', '3840x2160'],
+];
+
+const LOCAL_DIRS = [
+    GLib.build_filenamev([GLib.get_home_dir(), 'Pictures', 'Wallpapers']),
+    GLib.build_filenamev([GLib.get_home_dir(), 'Pictures']),
+];
+
+const EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.bmp'];
+
+const DOWNLOAD_DIR = GLib.build_filenamev(
+    [GLib.get_home_dir(), 'Pictures', 'Wallpapers']);
+
+/* Le script vit dans bin/, wallset est son voisin. On résout en absolu :
+ * programInvocationName peut être relatif selon la façon dont on lance. */
+const SCRIPT_DIR = GLib.path_get_dirname(
+    Gio.File.new_for_path(System.programInvocationName).get_path());
+
+function wallsetPath() {
+    const local = GLib.build_filenamev([SCRIPT_DIR, 'wallset']);
+    if (GLib.file_test(local, GLib.FileTest.IS_EXECUTABLE))
+        return local;
+    // Installé dans le PATH par install.sh.
+    return GLib.find_program_in_path('wallset') ?? 'wallset';
+}
+
+/* GJS n'expose ni URLSearchParams ni URL : on assemble à la main. */
+function query(params) {
+    return Object.entries(params)
+        .filter(([, v]) => v !== undefined && v !== null && v !== '')
+        .map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`)
+        .join('&');
+}
+
+const Picker = GObject.registerClass(
+class Picker extends Adw.ApplicationWindow {
+    _init(app) {
+        super._init({
+            application: app,
+            title: 'Fonds d\'écran',
+            default_width: 1120,
+            default_height: 760,
+        });
+
+        this._session = new Soup.Session();
+        this._cancellable = new Gio.Cancellable();
+        this._page = 1;
+        this._lastPage = 1;
+
+        const toolbar = new Adw.ToolbarView();
+        toolbar.add_top_bar(this._header());
+        toolbar.set_content(this._stack());
+
+        // Une seule affectation : poser d'abord `toolbar` puis le remplacer
+        // par l'overlay reparente le widget et fait râler GTK.
+        this._toast = new Adw.ToastOverlay({child: toolbar});
+        this.set_content(this._toast);
+
+        this._loadLocal();
+    }
+
+    /* --- Chrome ------------------------------------------------------------- */
+
+    _header() {
+        const header = new Adw.HeaderBar();
+
+        this._switcher = new Adw.ViewSwitcher({policy: Adw.ViewSwitcherPolicy.WIDE});
+        header.set_title_widget(this._switcher);
+
+        // Filtre de résolution : segmenté, comme la référence.
+        this._resolution = new Gtk.DropDown({
+            model: Gtk.StringList.new(RESOLUTIONS.map(([label]) => label)),
+            selected: 0,
+            tooltip_text: 'Résolution minimale des résultats en ligne',
+        });
+        this._resolution.connect('notify::selected', () => {
+            if (this._search.text.trim())
+                this._loadOnline(1);
+        });
+        header.pack_end(this._resolution);
+
+        this._search = new Gtk.SearchEntry({
+            placeholder_text: 'Rechercher en ligne…',
+            width_request: 260,
+        });
+        this._search.connect('activate', () => this._loadOnline(1));
+        header.pack_start(this._search);
+
+        return header;
+    }
+
+    _stack() {
+        this._view = new Adw.ViewStack();
+
+        this._localFlow = this._flowBox();
+        this._onlineFlow = this._flowBox();
+
+        this._view.add_titled_with_icon(
+            this._scrolled(this._localFlow), 'local', 'Local', 'folder-pictures-symbolic');
+        this._view.add_titled_with_icon(
+            this._onlineScrolled(), 'online', 'En ligne', 'globe-symbolic');
+
+        this._switcher.stack = this._view;
+        return this._view;
+    }
+
+    _flowBox() {
+        return new Gtk.FlowBox({
+            homogeneous: true,
+            column_spacing: 12,
+            row_spacing: 12,
+            margin_start: 16, margin_end: 16, margin_top: 16, margin_bottom: 16,
+            selection_mode: Gtk.SelectionMode.NONE,
+            min_children_per_line: 2,
+            max_children_per_line: 5,
+            valign: Gtk.Align.START,
+        });
+    }
+
+    _scrolled(child) {
+        return new Gtk.ScrolledWindow({
+            child,
+            hscrollbar_policy: Gtk.PolicyType.NEVER,
+            vexpand: true,
+        });
+    }
+
+    /* La pagination vit sous la grille en ligne, jamais sous la locale. */
+    _onlineScrolled() {
+        const box = new Gtk.Box({orientation: Gtk.Orientation.VERTICAL});
+        box.append(this._scrolled(this._onlineFlow));
+
+        this._pager = new Gtk.Box({
+            orientation: Gtk.Orientation.HORIZONTAL,
+            halign: Gtk.Align.CENTER,
+            spacing: 8,
+            margin_bottom: 12,
+            visible: false,
+        });
+
+        const prev = new Gtk.Button({icon_name: 'go-previous-symbolic'});
+        prev.connect('clicked', () => this._loadOnline(this._page - 1));
+        this._pageLabel = new Gtk.Label({label: '1 / 1'});
+        const next = new Gtk.Button({icon_name: 'go-next-symbolic'});
+        next.connect('clicked', () => this._loadOnline(this._page + 1));
+
+        this._pager.append(prev);
+        this._pager.append(this._pageLabel);
+        this._pager.append(next);
+        box.append(this._pager);
+
+        return box;
+    }
+
+    _notify(message) {
+        this._toast.add_toast(new Adw.Toast({title: message, timeout: 3}));
+    }
+
+    /* --- Grille locale ------------------------------------------------------ */
+
+    _loadLocal() {
+        this._localFlow.remove_all();
+        const seen = new Set();
+
+        for (const dir of LOCAL_DIRS) {
+            let iter;
+            try {
+                iter = Gio.File.new_for_path(dir).enumerate_children(
+                    'standard::name,standard::type', Gio.FileQueryInfoFlags.NONE, null);
+            } catch (e) {
+                continue;   // dossier absent : ce n'est pas une erreur
+            }
+
+            let info;
+            while ((info = iter.next_file(null)) !== null) {
+                const name = info.get_name();
+                if (!EXTENSIONS.some(ext => name.toLowerCase().endsWith(ext)))
+                    continue;
+
+                const path = GLib.build_filenamev([dir, name]);
+                if (seen.has(path))
+                    continue;
+                seen.add(path);
+
+                this._localFlow.append(this._tile(path, () => this._apply(path)));
+            }
+        }
+
+        if (!seen.size)
+            this._notify(`Aucune image dans ${LOCAL_DIRS.join(' ni ')}`);
+    }
+
+    /* --- Grille en ligne ---------------------------------------------------- */
+
+    _loadOnline(page) {
+        const term = this._search.text.trim();
+        if (page < 1)
+            return;
+
+        const [, atleast] = RESOLUTIONS[this._resolution.selected];
+        const url = 'https://wallhaven.cc/api/v1/search?' + query({
+            q: term,
+            categories: '100',   // general uniquement
+            purity: '100',       // sfw uniquement, non configurable ici
+            atleast,
+            sorting: term ? 'relevance' : 'toplist',
+            page,
+        });
+
+        this._view.set_visible_child_name('online');
+        this._onlineFlow.remove_all();
+        this._notify(term ? `Recherche « ${term} »…` : 'Chargement du top…');
+
+        const message = Soup.Message.new('GET', url);
+        message.request_headers.append('User-Agent', 'material-you-gnome');
+
+        this._session.send_and_read_async(
+            message, GLib.PRIORITY_DEFAULT, this._cancellable, (session, res) => {
+                let json;
+                try {
+                    const bytes = session.send_and_read_finish(res);
+                    if (message.get_status() !== Soup.Status.OK)
+                        throw new Error(`HTTP ${message.get_status()}`);
+                    json = JSON.parse(new TextDecoder().decode(bytes.get_data()));
+                } catch (e) {
+                    this._notify('Wallhaven injoignable');
+                    return;
+                }
+
+                const items = json?.data ?? [];
+                this._page = json?.meta?.current_page ?? page;
+                this._lastPage = json?.meta?.last_page ?? 1;
+                this._pageLabel.label = `${this._page} / ${this._lastPage}`;
+                this._pager.visible = items.length > 0;
+
+                if (!items.length) {
+                    this._notify('Aucun résultat');
+                    return;
+                }
+
+                for (const item of items) {
+                    // On affiche la vignette et on ne télécharge le fichier
+                    // pleine résolution qu'au clic : une page fait 24 images.
+                    const tile = this._remoteTile(item.thumbs?.small ?? item.thumbs?.original,
+                                                  () => this._download(item.path));
+                    this._onlineFlow.append(tile);
+                }
+            });
+    }
+
+    /* --- Tuiles ------------------------------------------------------------- */
+
+    _tile(path, onClick) {
+        const picture = new Gtk.Picture({
+            content_fit: Gtk.ContentFit.COVER,
+            width_request: THUMB_W,
+            height_request: THUMB_H,
+        });
+        picture.set_filename(path);
+        return this._button(picture, onClick, GLib.path_get_basename(path));
+    }
+
+    _remoteTile(url, onClick) {
+        const picture = new Gtk.Picture({
+            content_fit: Gtk.ContentFit.COVER,
+            width_request: THUMB_W,
+            height_request: THUMB_H,
+        });
+
+        Gio.File.new_for_uri(url).load_contents_async(this._cancellable, (file, res) => {
+            try {
+                const [, bytes] = file.load_contents_finish(res);
+                picture.set_paintable(
+                    Gdk.Texture.new_from_bytes(new GLib.Bytes(bytes)));
+            } catch (e) {
+                // Vignette illisible : la tuile reste vide plutôt que de
+                // faire tomber la page entière.
+            }
+        });
+
+        return this._button(picture, onClick, 'wallhaven');
+    }
+
+    _button(child, onClick, tooltip) {
+        const frame = new Gtk.Frame({child});
+        frame.add_css_class('card');
+
+        const button = new Gtk.Button({child: frame, tooltip_text: tooltip});
+        button.add_css_class('flat');
+        button.connect('clicked', onClick);
+        return button;
+    }
+
+    /* --- Application -------------------------------------------------------- */
+
+    _download(url) {
+        this._notify('Téléchargement…');
+        GLib.mkdir_with_parents(DOWNLOAD_DIR, 0o755);
+
+        const target = GLib.build_filenamev(
+            [DOWNLOAD_DIR, GLib.path_get_basename(url)]);
+
+        if (GLib.file_test(target, GLib.FileTest.EXISTS)) {
+            this._apply(target);
+            return;
+        }
+
+        Gio.File.new_for_uri(url).load_contents_async(this._cancellable, (file, res) => {
+            try {
+                const [, bytes] = file.load_contents_finish(res);
+                GLib.file_set_contents(target, bytes);
+            } catch (e) {
+                this._notify('Échec du téléchargement');
+                return;
+            }
+            this._loadLocal();   // l'image rejoint la grille locale
+            this._apply(target);
+        });
+    }
+
+    /* Toute la recoloration passe par `wallset` : ce sélecteur ne connaît ni
+     * matugen ni les hooks. */
+    _apply(path) {
+        try {
+            const proc = Gio.Subprocess.new(
+                [wallsetPath(), path],
+                Gio.SubprocessFlags.STDOUT_SILENCE | Gio.SubprocessFlags.STDERR_PIPE);
+
+            proc.communicate_utf8_async(null, null, (p, res) => {
+                const [, , stderr] = p.communicate_utf8_finish(res);
+                if (p.get_successful())
+                    this._notify(`Appliqué : ${GLib.path_get_basename(path)}`);
+                else
+                    this._notify(`wallset a échoué : ${(stderr ?? '').split('\n')[0]}`);
+            });
+        } catch (e) {
+            this._notify(`wallset introuvable (${e.message})`);
+        }
+    }
+});
+
+const app = new Adw.Application({application_id: APP_ID});
+app.connect('activate', () => {
+    const win = app.active_window ?? new Picker(app);
+    win.present();
+});
+app.run([System.programInvocationName, ...ARGV]);

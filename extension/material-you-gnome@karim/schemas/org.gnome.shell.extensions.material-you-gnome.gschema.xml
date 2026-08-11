@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.material-you-gnome"
+          path="/org/gnome/shell/extensions/material-you-gnome/">
+
+    <!-- Widgets du bureau. Chacun peut être coupé sans toucher au code : la
+         couche les instancie à la demande et resserre la pile. -->
+    <key name="show-clock" type="b">
+      <default>true</default>
+      <summary>Afficher l'horloge</summary>
+    </key>
+    <key name="show-quote" type="b">
+      <default>true</default>
+      <summary>Afficher la citation</summary>
+    </key>
+    <key name="show-media" type="b">
+      <default>true</default>
+      <summary>Afficher la carte média</summary>
+    </key>
+    <key name="show-calendar" type="b">
+      <default>true</default>
+      <summary>Afficher le calendrier</summary>
+    </key>
+    <key name="show-weather" type="b">
+      <default>true</default>
+      <summary>Afficher la météo</summary>
+    </key>
+    <key name="show-resources" type="b">
+      <default>true</default>
+      <summary>Afficher les ressources système</summary>
+    </key>
+    <key name="show-usercard" type="b">
+      <default>true</default>
+      <summary>Afficher la carte utilisateur</summary>
+    </key>
+
+    <key name="show-worldclocks" type="b">
+      <default>true</default>
+      <summary>Afficher les horloges mondiales</summary>
+    </key>
+
+    <!-- « Libellé|Zone IANA ». On n'utilise pas org.gnome.shell.world-clocks :
+         cette clé stocke des localisations GWeather sérialisées, pénibles à
+         écrire depuis un panneau de préférences. -->
+    <key name="world-clocks" type="as">
+      <default>['Sydney|Australia/Sydney','Tokyo|Asia/Tokyo','Londres|Europe/London','New York|America/New_York']</default>
+      <summary>Fuseaux affichés</summary>
+    </key>
+
+    <key name="clock-style" type="s">
+      <choices>
+        <choice value="cookie"/>
+        <choice value="digital"/>
+      </choices>
+      <default>'cookie'</default>
+      <summary>Style d'horloge</summary>
+    </key>
+
+    <key name="quote-text" type="s">
+      <default>''</default>
+      <summary>Texte de la citation</summary>
+    </key>
+
+    <key name="show-lyrics" type="b">
+      <default>true</default>
+      <summary>Afficher les paroles synchronisées</summary>
+      <description>Interroge lrclib.net à chaque changement de piste.</description>
+    </key>
+
+    <!-- Barre -->
+    <key name="floating-panel" type="b">
+      <default>false</default>
+      <summary>Barre flottante</summary>
+      <description>
+        Rend le fond de la barre transparent, ne laissant que les îlots. Plus
+        proche d'illogical-impulse, au prix du contenu des fenêtres maximisées
+        qui transparaît sous la barre.
+      </description>
+    </key>
+
+    <key name="desktop-margin" type="i">
+      <default>48</default>
+      <range min="0" max="200"/>
+      <summary>Marge des widgets aux bords de l'écran</summary>
+    </key>
+  </schema>
+</schemalist>
