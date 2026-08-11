@@ -22,7 +22,12 @@ couleurs viennent du fond d'écran.
 | Sélecteur de fonds d'écran | Réglages |
 |:---:|:---:|
 | ![Sélecteur](screenshots/wallpicker.png) | ![Réglages](screenshots/preferences.png) |
-| Grille locale et recherche en ligne | Quatre pages, tout s'applique à chaud |
+| Grille locale et recherche en ligne | Cinq pages, tout s'applique à chaud |
+
+| Page Système |
+|:---:|
+| ![Système](screenshots/preferences-system.png) |
+| Écrans, clavier, pointeur, fenêtres et démarrage, rassemblés |
 
 | Quick settings | Calendrier et notifications |
 |:---:|:---:|
@@ -296,6 +301,20 @@ moitié des pages — `HyprlandConfig`, `NiriConfig` — n'a pas de sens ici) :
   citation, paroles synchronisées, marge aux bords.
 - **Barre** — bascule « barre flottante » (fond transparent, ne laissant que les
   îlots).
+- **Système** — équivalent de leur page `HyprlandConfig`, qui existe parce que
+  Hyprland n'a aucune application de réglages. GNOME en a une : cette page ne
+  réinvente donc rien, elle rassemble au même endroit ce qui est réparti dans
+  cet onglet chez eux — écrans, clavier, pointeur, activation des fenêtres,
+  animations, applications au démarrage.
+
+  Deux sections de leur page **n'ont pas d'équivalent** : gaps, bordures,
+  opacité et flou d'une part, layout dwindle/master d'autre part — ce sont des
+  notions de compositeur pavant, que Mutter n'expose pas.
+
+  Les **écrans restent en lecture seule**. Mutter sait les reconfigurer via
+  `ApplyMonitorsConfig`, mais une configuration erronée laisse un écran noir :
+  on affiche l'état et on ouvre le panneau de GNOME, qui a la validation et le
+  retour arrière temporisé.
 - **À propos**.
 
 Tout passe par GSettings et s'applique **à chaud** : couper un widget le détruit

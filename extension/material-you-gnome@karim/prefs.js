@@ -15,6 +15,8 @@ import GLib from 'gi://GLib';
 
 import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
+import {systemPage} from './lib/prefs-system.js';
+
 const WIDGETS = [
     ['show-clock', 'Horloge', 'Cadran festonné, jour et mois'],
     ['show-quote', 'Citation', 'Petite bulle sous l\'horloge'],
@@ -79,6 +81,7 @@ export default class MaterialYouBarPreferences extends ExtensionPreferences {
         window.add(this._wallpaperPage());
         window.add(this._desktopPage(settings));
         window.add(this._barPage(settings));
+        window.add(systemPage());
         window.add(this._aboutPage());
     }
 
