@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+# install-fonts — installe les polices de l'identité visuelle illogical-impulse.
+#
+# Tout part dans ~/.local/share/fonts/material-you-gnome/ : pas de sudo, pas de
+# collision avec les paquets apt, et une désinstallation = un `rm -rf`.
+#
+# Les paquets apt ne conviennent pas :
+#   - fonts-material-design-icons-iconfont = l'ancien "Material Icons",
+#     codepoints différents de "Material Symbols Rounded". Inutilisable.
+#   - fonts-jetbrains-mono = version non patchée, sans les glyphes Nerd Font.
+#
+# Idempotent : relançable, ne retélécharge que ce qui manque.
+
+set -euo pipefail
+
+DEST="${XDG_DATA_HOME:-$HOME/.local/share}/fonts/material-you-gnome"
+TMP="$(mktemp -d)"
+trap 'rm -rf "$TMP"' EXIT
+
+ok(){   echo "  ✓ $*"; }
+skip(){ echo "  · $*"; }
+warn(){ echo "  ⚠ $*" >&2; }
+
+mkdir -p "$DEST"
+
+# --- Polices variables, téléchargées à l'unité ---------------------------------
+# Une seule TTF variable couvre tous les poids : rien à multiplier.
+fetch_ttf() {
+    local name="$1" url="$2" out="$DEST/$1"
+    if [[ -s "$out" ]]; then skip "$name (déjà là)"; return 0; fi
+    if curl -fsSL -m 180 "$url" -o "$TMP/f.ttf" && [[ -s "$TMP/f.ttf" ]]; then
+        mv "$TMP/f.ttf" "$out"
+        ok "$name ($(du -h "$out" | cut -f1))"
+    else
+        warn "échec du téléchargement : $name"
+        return 1
+    fi
+}
+
+GF="https://github.com/google/fonts/raw/main/ofl"
+MDI="https://github.com/google/material-design-icons/raw/master/variablefont"
+
+echo "Polices variables :"
+fetch_ttf "MaterialSymbolsRounded.ttf" \
+    "$MDI/MaterialSymbolsRounded%5BFILL%2CGRAD%2Copsz%2Cwght%5D.ttf" || true
+fetch_ttf "SpaceGrotesk.ttf" \
+    "$GF/spacegrotesk/SpaceGrotesk%5Bwght%5D.ttf" || true
+fetch_ttf "ReadexPro.ttf" \
+    "$GF/readexpro/ReadexPro%5BHEXP%2Cwght%5D.ttf" || true
+
+# Google Sans Flex n'est pas redistribuée par Google Fonts (404 sur le dépôt
+# public) — c'est une police propriétaire Google. Le code ne l'utilise qu'à 3
+# endroits contre 12 pour Space Grotesk : fontconfig substituera, sans casse.
+
+# --- JetBrains Mono Nerd Font -------------------------------------------------
+# Version patchée (glyphes Powerline/Nerd), absente d'apt. L'archive fait ~30 Mo
+# et contient une centaine de variantes ; on n'extrait que les 4 utiles.
+echo "JetBrains Mono Nerd Font :"
+if compgen -G "$DEST/JetBrainsMonoNerdFont-*.ttf" > /dev/null; then
+    skip "déjà installée"
+else
+    if curl -fsSL -m 600 \
+        "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip" \
+        -o "$TMP/jbm.zip"; then
+        unzip -joq "$TMP/jbm.zip" \
+            'JetBrainsMonoNerdFont-Regular.ttf' \
+            'JetBrainsMonoNerdFont-Bold.ttf' \
+            'JetBrainsMonoNerdFont-Italic.ttf' \
+            'JetBrainsMonoNerdFont-BoldItalic.ttf' \
+            -d "$DEST" 2>/dev/null \
+            && ok "4 variantes extraites" \
+            || warn "archive téléchargée mais extraction vide (noms changés ?)"
+    else
+        warn "échec du téléchargement de JetBrainsMono.zip"
+    fi
+fi
+
+# --- Cache --------------------------------------------------------------------
+echo "Cache fontconfig :"
+fc-cache -f "$DEST" > /dev/null 2>&1
+ok "reconstruit"
+
+echo
+echo "Vérification :"
+for f in "Material Symbols Rounded" "Space Grotesk" "Readex Pro" "JetBrainsMono Nerd Font"; do
+    n=$(fc-list : family 2>/dev/null | tr ',' '\n' | grep -cx "$f" || true)
+    printf "  %-26s %s\n" "$f" "$([[ $n -gt 0 ]] && echo "OK" || echo "ABSENTE")"
+done

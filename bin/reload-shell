@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+# reload-shell — relance GNOME Shell pour recharger le code de l'extension.
+#
+# Pourquoi ce script existe : GJS met les modules ES en cache depuis GNOME 45.
+# `gnome-extensions disable && enable` rejoue donc les classes déjà en mémoire
+# et ne reprend PAS les modifications des .js — seul stylesheet.css est relu.
+# Symptôme trompeur : l'extension reste ACTIVE, sans erreur, en jouant l'ancien
+# code. Il faut redémarrer le Shell.
+#
+# NE PAS utiliser `gnome-shell --replace` : sur une session Ubuntu, le Shell est
+# géré par systemd (org.gnome.Shell@x11.service). Une instance lancée à la main
+# fait mourir le process principal de l'unité, systemd relance l'unité, et la
+# nouvelle instance écrase la manuelle. Résultat : une bagarre qui ressemble à
+# un crash de session.
+#
+# La bonne méthode est celle d'Alt+F2 → `r` : elle demande au Shell EN COURS de
+# se relancer sur place (Meta.restart), sans toucher à l'unité systemd ni aux
+# fenêtres. On la pilote ici au clavier, faute d'API : Eval est bloqué hors
+# unsafe-mode.
+#
+# X11 uniquement : sous Wayland, le Shell ne peut pas se relancer sur place.
+
+set -euo pipefail
+
+if [ "${XDG_SESSION_TYPE:-}" = "wayland" ]; then
+  echo "reload-shell: session Wayland — le Shell ne peut pas se relancer sur" >&2
+  echo "              place. Déconnecte-toi et reconnecte-toi." >&2
+  exit 1
+fi
+
+command -v xdotool >/dev/null || {
+  echo "reload-shell: xdotool absent. Fais-le à la main : Alt+F2, puis 'r'." >&2
+  exit 1
+}
+
+OLD=$(pgrep -x gnome-shell | head -1 || true)
+echo "▸ redémarrage sur place (Alt+F2 → r), PID actuel: ${OLD:-inconnu}"
+
+export DISPLAY=${DISPLAY:-:0}
+xdotool key alt+F2
+sleep 1
+xdotool type --delay 60 'r'
+sleep 1
+xdotool key Return
+
+# Meta.restart recharge le Shell sans changer de process : on attend que les
+# extensions soient de nouveau chargées plutôt que de guetter un nouveau PID.
+sleep 6
+
+# Par sécurité : certains chemins de redémarrage coupent les extensions
+# utilisateur, ce qui emporte user-theme et donc le thème MaterialYou.
+if [ "$(gsettings get org.gnome.shell disable-user-extensions)" = "true" ]; then
+  gsettings set org.gnome.shell disable-user-extensions false
+  echo "  ⚠ extensions utilisateur avaient été coupées — réactivées"
+  sleep 2
+fi
+
+NEW=$(pgrep -x gnome-shell | head -1 || true)
+if [ "$NEW" = "$OLD" ]; then
+  echo "  ✓ rechargé sur place (PID inchangé: $NEW — c'est le comportement attendu)"
+else
+  echo "  · nouveau PID: $NEW"
+fi
+
+echo "▸ extensions actives :"
+gnome-extensions list --enabled 2>/dev/null | sed 's/^/    /'
