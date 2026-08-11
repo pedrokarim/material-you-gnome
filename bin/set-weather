@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+# set-weather — configure le lieu de la carte météo du bureau.
+#
+#   set-weather Saint-Denis
+#   set-weather "Saint-Denis, Réunion"
+#   set-weather --coords -20.8823 55.4504 "Saint-Denis"
+#   set-weather --show
+#
+# Résout le nom via l'API de géocodage d'Open-Meteo (sans clé, sans compte) et
+# écrit ~/.config/material-you-gnome/weather.conf. Le widget lit ce fichier ;
+# tant qu'il n'existe pas, il n'émet aucune requête réseau.
+
+set -euo pipefail
+
+CONF="${XDG_CONFIG_HOME:-$HOME/.config}/material-you-gnome/weather.conf"
+
+write_conf() {
+  mkdir -p "$(dirname "$CONF")"
+  cat > "$CONF" <<EOF
+# Lieu de la carte météo — écrit par bin/set-weather.
+latitude = $1
+longitude = $2
+label = $3
+EOF
+  echo "▸ $CONF"
+  sed 's/^/    /' "$CONF"
+}
+
+case "${1:-}" in
+  --show)
+    [ -f "$CONF" ] && { echo "▸ $CONF"; sed 's/^/    /' "$CONF"; } \
+                   || echo "set-weather: aucun lieu configuré ($CONF absent)"
+    exit 0 ;;
+  --coords)
+    [ $# -ge 3 ] || { echo "set-weather: --coords <lat> <lon> [label]" >&2; exit 1; }
+    write_conf "$2" "$3" "${4:-}"
+    exit 0 ;;
+  -h|--help|'')
+    awk 'NR>1 { if (!/^#/) exit; sub(/^# ?/, ""); print }' "$0"
+    exit 0 ;;
+esac
+
+command -v jq >/dev/null || { echo "set-weather: jq requis" >&2; exit 1; }
+
+QUERY="$*"
+# L'API ne géocode que le nom de la ville. Ce qui suit une virgule sert de
+# filtre — indispensable : « Brest » renvoie la Biélorussie avant la Bretagne,
+# et l'ordre de l'API n'est ni alphabétique ni par population.
+CITY="${QUERY%%,*}"
+FILTER=""
+[ "$QUERY" != "$CITY" ] && FILTER="$(echo "${QUERY#*,}" | sed 's/^ *//; s/ *$//')"
+
+RESPONSE=$(curl -fsSL -m 20 --get \
+  --data-urlencode "name=$CITY" \
+  --data "count=20&language=fr&format=json" \
+  "https://geocoding-api.open-meteo.com/v1/search") \
+  || { echo "set-weather: échec de la requête de géocodage" >&2; exit 1; }
+
+COUNT=$(echo "$RESPONSE" | jq '.results | length // 0')
+if [ "$COUNT" = "0" ]; then
+  echo "set-weather: aucun résultat pour « $CITY »" >&2
+  exit 1
+fi
+
+# Le filtre est comparé sans casse au pays, au code pays et à la région.
+if [ -n "$FILTER" ]; then
+  MATCHES=$(echo "$RESPONSE" | jq --arg f "$FILTER" '
+    [ .results[] | select(
+        ((.country // "") | ascii_downcase) == ($f | ascii_downcase)
+        or ((.country_code // "") | ascii_downcase) == ($f | ascii_downcase)
+        or ((.admin1 // "") | ascii_downcase) == ($f | ascii_downcase)
+    ) ]')
+  if [ "$(echo "$MATCHES" | jq 'length')" = "0" ]; then
+    echo "set-weather: « $CITY » trouvé, mais aucun résultat pour « $FILTER »." >&2
+    echo "Candidats :" >&2
+    echo "$RESPONSE" | jq -r '.results[] | "    \(.name), \(.admin1 // "?") (\(.country), \(.country_code))"' >&2
+    exit 1
+  fi
+  PICK=$(echo "$MATCHES" | jq '.[0]')
+else
+  if [ "$COUNT" -gt 1 ]; then
+    echo "▸ $COUNT résultats pour « $CITY » — le premier est retenu."
+    echo "  Précise avec une virgule si ce n'est pas le bon, ex. « $CITY, France » :"
+    echo "$RESPONSE" | jq -r '.results[] | "    \(.name), \(.admin1 // "?") (\(.country), \(.country_code))"'
+    echo
+  fi
+  PICK=$(echo "$RESPONSE" | jq '.results[0]')
+fi
+
+LAT=$(echo "$PICK" | jq -r '.latitude')
+LON=$(echo "$PICK" | jq -r '.longitude')
+NAME=$(echo "$PICK" | jq -r '.name')
+echo "▸ retenu : $(echo "$PICK" | jq -r '"\(.name), \(.admin1 // "?") (\(.country))"')"
+
+write_conf "$LAT" "$LON" "$NAME"
+
+echo
+echo "La carte se rafraîchit toute seule dans les 15 min ;"
+echo "pour la voir tout de suite :  ./bin/reload-shell"
