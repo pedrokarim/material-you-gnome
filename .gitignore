@@ -1,7 +1,3 @@
-# Clones de référence (dépôts tiers, avec leur propre .git) — ne pas versionner.
-.references/*/
-!.references/MAP.md
-
 # Généré par matugen à chaque `wallset`.
 extension/*/stylesheet.css
 

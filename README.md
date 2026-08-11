@@ -474,16 +474,11 @@ done
 `matugen` (≥ 4.0, `cargo install matugen`), `jq`, `gsettings`, l'extension GNOME
 `user-theme`, et `python3` + `python3-pil` pour `--scheme auto`.
 
-## Références
+## Référence
 
-`.references/end4-pC/` (non versionné) contient le clone de
-[`pctrade/end4-pC`](https://github.com/pctrade/end4-pC), fork d'illogical-impulse.
-Le code est en QML/Quickshell, **non exécutable sur GNOME** — il sert de
-référence de design et d'algorithmes. `.references/MAP.md` en donne la carte :
-quels fichiers correspondent à quoi ici, et où regarder pour la suite.
-
-Récupérable avec :
-
-```bash
-git clone https://github.com/pctrade/end4-pC .references/end4-pC
-```
+Le projet s'inspire d'[illogical-impulse](https://github.com/end-4/dots-hyprland)
+et de son fork [`pctrade/end4-pC`](https://github.com/pctrade/end4-pC). Leur code
+est en QML/Quickshell et **ne s'exécute pas sur GNOME** : il a servi de référence
+de design et d'algorithmes, pas de base de portage. Rien n'en est repris
+littéralement — les correspondances utiles sont notées dans les commentaires des
+fichiers concernés.
