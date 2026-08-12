@@ -27,6 +27,7 @@ const WIDGETS = [
     ['show-usercard', 'Carte utilisateur', 'Session, temps d\'allumage, actions'],
     ['show-worldclocks', 'Horloges mondiales', 'Heure locale et fuseaux choisis'],
     ['show-devices', 'Appareils connectés', 'Batterie des souris, casques et manettes'],
+    ['show-anilist', 'AniList', 'Animes et mangas en cours'],
 ];
 
 const CLOCK_STYLES = [
@@ -207,6 +208,26 @@ export default class MaterialYouBarPreferences extends ExtensionPreferences {
         });
         clock.add(style);
         page.add(clock);
+
+        const anilist = new Adw.PreferencesGroup({
+            title: 'AniList',
+            description: 'Le widget reste muet tant qu\'aucun pseudo n\'est renseigné : '
+                + 'aucune requête n\'est émise sans ça.',
+        });
+        const userRow = new Adw.EntryRow({title: 'Pseudo'});
+        settings.bind('anilist-user', userRow, 'text', Gio.SettingsBindFlags.DEFAULT);
+        anilist.add(userRow);
+
+        const countRow = new Adw.SpinRow({
+            title: 'Entrées par section',
+            subtitle: 'Animes et mangas séparément',
+            adjustment: new Gtk.Adjustment({
+                lower: 1, upper: 8, step_increment: 1, page_increment: 2,
+            }),
+        });
+        settings.bind('anilist-count', countRow, 'value', Gio.SettingsBindFlags.DEFAULT);
+        anilist.add(countRow);
+        page.add(anilist);
 
         const zones = new Adw.PreferencesGroup({
             title: 'Fuseaux horaires',

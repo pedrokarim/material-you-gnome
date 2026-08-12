@@ -541,3 +541,57 @@
     icon-size: 14px;
     color: {{colors.primary.default.hex}};
 }
+
+/* --- AniList ----------------------------------------------------------------- */
+.myg-anilist {
+    min-width: 470px;
+    max-width: 470px;
+    spacing: 8px;
+}
+
+.myg-anilist-header {
+    spacing: 10px;
+    padding-bottom: 4px;
+}
+
+.myg-anilist-user {
+    font-size: 1.05em;
+    font-weight: bold;
+    color: {{colors.on_surface.default.hex}};
+}
+
+.myg-anilist-counts {
+    font-size: 0.85em;
+    color: {{colors.on_surface_variant.default.hex}};
+}
+
+.myg-anilist-section {
+    font-size: 0.78em;
+    font-weight: bold;
+    color: {{colors.primary.default.hex}};
+    padding-top: 6px;
+}
+
+.myg-anilist-row {
+    spacing: 12px;
+}
+
+.myg-anilist-cover {
+    border-radius: 8px;
+    background-color: {{colors.surface_container_highest.default.hex}};
+}
+
+.myg-anilist-text {
+    spacing: 2px;
+    max-width: 360px;
+}
+
+.myg-anilist-title {
+    font-size: 0.95em;
+    color: {{colors.on_surface.default.hex}};
+}
+
+.myg-anilist-progress {
+    font-size: 0.82em;
+    color: {{colors.on_surface_variant.default.hex}};
+}

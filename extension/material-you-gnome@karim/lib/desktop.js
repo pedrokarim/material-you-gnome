@@ -29,6 +29,7 @@ import {Weather} from './widgets/weather.js';
 import {Resources} from './widgets/resources.js';
 import {UserCard} from './widgets/usercard.js';
 import {Devices} from './widgets/devices.js';
+import {AniList} from './widgets/anilist.js';
 
 // L'ordre fait la pile : chaque ancre empile ses widgets de haut en bas.
 // Chaque entrée porte la clé GSettings qui décide de sa présence.
@@ -40,6 +41,7 @@ const WIDGETS = [
     ['show-weather', Weather],         // colonne droite
     ['show-resources', Resources],
     ['show-devices', Devices],
+    ['show-anilist', AniList],
     ['show-worldclocks', WorldClocks],
     ['show-usercard', UserCard],
 ];

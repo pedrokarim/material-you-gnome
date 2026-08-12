@@ -34,6 +34,25 @@
       <summary>Afficher la carte utilisateur</summary>
     </key>
 
+    <!-- Désactivé par défaut : le tableau de bord commence à être chargé, et
+         ce widget interroge un service tiers. -->
+    <key name="show-anilist" type="b">
+      <default>false</default>
+      <summary>Afficher les séries AniList en cours</summary>
+    </key>
+
+    <key name="anilist-user" type="s">
+      <default>''</default>
+      <summary>Pseudo AniList</summary>
+      <description>Vide, aucune requête n'est émise.</description>
+    </key>
+
+    <key name="anilist-count" type="i">
+      <default>3</default>
+      <range min="1" max="8"/>
+      <summary>Nombre d'entrées par section</summary>
+    </key>
+
     <key name="show-devices" type="b">
       <default>true</default>
       <summary>Afficher les appareils connectés</summary>
