@@ -482,20 +482,13 @@
     color: {{colors.on_primary_container.default.hex}};
 }
 
-/* --- Horloge « pixel » (variante) ------------------------------------------- */
+/* --- Horloge « chiffres en carré » (variante) -------------------------------
+ * Dessinée en Cairo, qui ne lit pas le CSS : les couleurs passent par des
+ * propriétés maison, comme pour le cadran festonné. */
 .myg-pixel {
-    spacing-rows: 0;
-    spacing-columns: 12px;
+    -myg-pixel-hours: {{colors.on_surface.default.hex}};
+    -myg-pixel-minutes: {{colors.primary.default.hex}};
 }
-
-.myg-pixel-digit {
-    font-size: 4.4em;
-    font-weight: bold;
-    min-width: 78px;
-}
-
-.myg-pixel-digit.hours   { color: {{colors.on_surface.default.hex}}; }
-.myg-pixel-digit.minutes { color: {{colors.primary.default.hex}}; }
 
 /* --- Coins d'écran ---------------------------------------------------------- */
 /* Dessinés en Cairo, qui ne lit pas le CSS : la couleur passe par une propriété
