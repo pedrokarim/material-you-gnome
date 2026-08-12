@@ -499,3 +499,43 @@
     color: {{colors.on_surface_variant.default.hex}};
     padding-left: 10px;
 }
+
+/* --- Appareils connectés ----------------------------------------------------- */
+.myg-devices {
+    min-width: 470px;
+    max-width: 470px;
+    spacing: 10px;
+}
+
+.myg-device-row {
+    spacing: 12px;
+}
+
+.myg-device-icon {
+    icon-size: 16px;
+    color: {{colors.on_primary_container.default.hex}};
+    background-color: {{colors.primary_container.default.hex}};
+    border-radius: 999px;
+    padding: 8px;
+}
+
+.myg-device-name {
+    font-size: 0.95em;
+    color: {{colors.on_surface.default.hex}};
+}
+
+.myg-device-level {
+    font-size: 1em;
+    font-weight: bold;
+    color: {{colors.on_surface.default.hex}};
+}
+
+/* Seuil bas : on veut repérer d'un coup d'œil ce qu'il faut recharger. */
+.myg-device-level.low {
+    color: {{colors.error.default.hex}};
+}
+
+.myg-device-charging {
+    icon-size: 14px;
+    color: {{colors.primary.default.hex}};
+}

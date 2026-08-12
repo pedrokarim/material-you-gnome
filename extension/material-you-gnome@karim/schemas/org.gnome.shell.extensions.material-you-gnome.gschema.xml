@@ -34,6 +34,12 @@
       <summary>Afficher la carte utilisateur</summary>
     </key>
 
+    <key name="show-devices" type="b">
+      <default>true</default>
+      <summary>Afficher les appareils connectés</summary>
+      <description>Périphériques rapportant un niveau de batterie, via UPower.</description>
+    </key>
+
     <key name="show-worldclocks" type="b">
       <default>true</default>
       <summary>Afficher les horloges mondiales</summary>

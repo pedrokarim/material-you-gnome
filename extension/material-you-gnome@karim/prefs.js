@@ -26,6 +26,7 @@ const WIDGETS = [
     ['show-resources', 'Ressources', 'CPU, mémoire et disque'],
     ['show-usercard', 'Carte utilisateur', 'Session, temps d\'allumage, actions'],
     ['show-worldclocks', 'Horloges mondiales', 'Heure locale et fuseaux choisis'],
+    ['show-devices', 'Appareils connectés', 'Batterie des souris, casques et manettes'],
 ];
 
 const CLOCK_STYLES = [
