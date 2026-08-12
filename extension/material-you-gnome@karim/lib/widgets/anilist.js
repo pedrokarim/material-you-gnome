@@ -108,11 +108,18 @@ class AniList extends St.BoxLayout {
         if (!url)
             return child;
 
+        // Le contenu doit occuper toute la largeur du bouton : par défaut il y
+        // est centré, et comme les lignes n'ont pas la même largeur naturelle —
+        // les titres courts ne sont pas tronqués — la colonne partait en biais.
+        child.x_align = Clutter.ActorAlign.FILL;
+        child.x_expand = true;
+
         const button = new St.Button({
             style_class: styleClass,
             child,
             can_focus: true,
             x_expand: true,
+            x_align: Clutter.ActorAlign.FILL,
         });
         button.connect('clicked', () => this._open(url));
         return button;
