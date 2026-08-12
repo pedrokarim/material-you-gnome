@@ -14,8 +14,8 @@ Testé sur **Ubuntu 24.04, GNOME Shell 46, session X11**.
 ## Captures
 
 Le bureau : horloge festonnée, citation, carte média avec paroles synchronisées,
-calendrier, météo, ressources, horloges mondiales, carte utilisateur. Toutes les
-couleurs viennent du fond d'écran.
+calendrier, météo, ressources, débit réseau, appareils connectés, AniList, carte
+utilisateur. Toutes les couleurs viennent du fond d'écran.
 
 ![Bureau](screenshots/desktop.png)
 
