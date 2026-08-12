@@ -161,6 +161,18 @@ Deux pièges d'empilement, tous deux silencieux :
   l'activation ne suffit donc pas : elle repasse au-dessus dès le premier
   changement de focus. `_lower()` est rebranché sur `Meta.Display::restacked`.
 
+**Widgets cliquables, mais sans survol.** Les extensions d'icônes de bureau —
+DING sur Ubuntu — posent une fenêtre plein écran de type `DESKTOP` au-dessus du
+groupe de fond. La couche passe donc au-dessus d'elle, sans quoi aucun clic
+n'atteindrait les boutons du lecteur ni les flèches du calendrier.
+
+Les **clics** fonctionnent : GNOME Shell a une saisie passive sur les boutons et
+fait son propre calcul de cible. Le **survol**, lui, n'arrive jamais : la fenêtre
+de DING capte le mouvement du pointeur, donc les états `:hover` ne se posent pas.
+Vérifié en désactivant DING — le survol fonctionne alors.
+`trackChrome(affectsInputRegion)` a été essayé sans effet : la région d'entrée du
+Shell ne prime pas sur celle d'une fenêtre cliente.
+
 C'est la **couche** qui place les widgets, pas les widgets eux-mêmes : chacun
 déclare seulement une ancre (`top-left` / `top-right`) et ceux qui la partagent
 s'empilent. Le placement se calcule sur les tailles *préférées*

@@ -649,3 +649,13 @@
 .myg-anilist-progress.airing {
     color: {{colors.primary.default.hex}};
 }
+
+/* Survol du bandeau : un voile clair translucide, pas un aplat — la bannière
+   doit rester visible dessous. */
+.myg-anilist-identity-link {
+    border-radius: 12px;
+}
+
+.myg-anilist-identity-link:hover {
+    background-color: rgba(255, 255, 255, 0.10);
+}

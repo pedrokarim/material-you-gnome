@@ -114,10 +114,13 @@ class AniList extends St.BoxLayout {
         child.x_align = Clutter.ActorAlign.FILL;
         child.x_expand = true;
 
+        // `track_hover` est indispensable : sans lui St ne pose jamais l'état
+        // :hover, et la règle CSS correspondante reste lettre morte.
         const button = new St.Button({
             style_class: styleClass,
             child,
             can_focus: true,
+            track_hover: true,
             x_expand: true,
             x_align: Clutter.ActorAlign.FILL,
         });
@@ -284,7 +287,14 @@ class AniList extends St.BoxLayout {
             `background-image: url("file://${AniList.logoPath}"); background-size: contain;`);
         row.add_child(logo);
 
-        header.add_child(this._linked(row, profile.url, 'myg-anilist-link'));
+        // Le bouton est bridé à la bande basse : dans le BinLayout du bandeau
+        // il s'étendrait sur toute la hauteur, et son voile de survol
+        // recouvrirait la bannière entière.
+        const linked = this._linked(row, profile.url, 'myg-anilist-identity-link');
+        linked.y_align = Clutter.ActorAlign.END;
+        linked.y_expand = false;
+        header.add_child(linked);
+
         return header;
     }
 

@@ -72,6 +72,7 @@ export class Desktop {
         global.window_group.add_child(this._layer);
         this._lower();
 
+
         this._build();
 
         // Un changement de visibilité reconstruit la couche : les widgets sont
@@ -177,6 +178,13 @@ export class Desktop {
      *
      * On passe donc au-dessus d'elle, mais toujours sous les fenêtres
      * ordinaires — les widgets restent du décor de bureau, pas une surflottante.
+     *
+     * Limite connue : seuls les CLICS traversent. La fenêtre de DING capte le
+     * mouvement du pointeur, donc aucun événement de survol n'atteint nos
+     * acteurs et les états :hover ne se posent jamais. Vérifié en désactivant
+     * DING : le survol fonctionne alors. `trackChrome(affectsInputRegion)` a
+     * été essayé sans effet — la région d'entrée du Shell ne prime pas sur
+     * celle d'une fenêtre cliente.
      */
     _raiseAboveDesktopWindows() {
         let topmost = null;
