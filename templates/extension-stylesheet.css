@@ -439,11 +439,12 @@
     spacing-columns: 8px;
 }
 
+/* Pas de min-width : la largeur vient de l'expansion, sinon les deux colonnes
+   se figent et la grille ne remplit pas la carte. */
 .myg-wc-cell {
     background-color: {{colors.surface_container_high.default.hex}};
     border-radius: 16px;
-    padding: 8px 12px;
-    min-width: 140px;
+    padding: 8px 14px;
     spacing: 2px;
 }
 

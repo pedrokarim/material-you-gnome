@@ -146,15 +146,66 @@ export const MprisWatcher = GObject.registerClass({
                     return;
                 }
 
-                const player = names.find(n => n.startsWith(MPRIS_PREFIX));
-                if (!player) {
+                const players = names.filter(n => n.startsWith(MPRIS_PREFIX));
+                if (!players.length) {
                     this._release();
                     this._onChanged();
                     return;
                 }
-                if (player !== this._busName)
-                    this._attach(player);
+
+                // Le lecteur courant garde la main tant qu'il expose une piste :
+                // changer d'écurie parce qu'un navigateur vient d'ouvrir un
+                // onglet ferait sauter l'affichage sans raison.
+                if (this._busName && players.includes(this._busName) && this.track)
+                    return;
+
+                this._pickBest(players);
             });
+    }
+
+    /* Plusieurs lecteurs coexistent dès qu'on a deux navigateurs ouverts, et
+     * la plupart sont à l'arrêt. Prendre le premier de la liste revient à tirer
+     * au sort — on interroge donc chacun avant de choisir. */
+    _pickBest(players) {
+        const results = [];
+
+        const decide = () => {
+            if (results.length < players.length)
+                return;
+
+            const playing = results.find(r => r.status === 'Playing');
+            const withTrack = results.find(r => r.title);
+            const chosen = (playing ?? withTrack ?? results[0])?.name;
+
+            if (chosen && chosen !== this._busName)
+                this._attach(chosen);
+            else if (!chosen)
+                this._release();
+        };
+
+        for (const name of players) {
+            Gio.DBus.session.call(
+                name, OBJECT_PATH,
+                'org.freedesktop.DBus.Properties', 'GetAll',
+                new GLib.Variant('(s)', [PLAYER_IFACE]),
+                new GLib.VariantType('(a{sv})'),
+                Gio.DBusCallFlags.NONE, -1, null,
+                (bus, res) => {
+                    let status = '';
+                    let title = '';
+                    try {
+                        const [props] = bus.call_finish(res).deepUnpack();
+                        status = props['PlaybackStatus']?.deepUnpack() ?? '';
+                        title = props['Metadata']?.deepUnpack()?.['xesam:title']
+                            ?.deepUnpack() ?? '';
+                    } catch (e) {
+                        // Lecteur parti entre-temps : il compte comme candidat
+                        // sans piste, pour ne pas bloquer la décision.
+                    }
+                    results.push({name, status, title});
+                    decide();
+                });
+        }
     }
 
     _attach(busName) {

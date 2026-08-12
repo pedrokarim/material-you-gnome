@@ -33,9 +33,12 @@ class WorldClocks extends St.BoxLayout {
         this.add_child(this._time);
         this.add_child(this._date);
 
+        // La grille doit occuper toute la largeur de la carte : sans expansion
+        // elle se tasse à gauche et laisse un vide franc à droite.
         this._grid = new St.Widget({
             layout_manager: new Clutter.GridLayout(),
             style_class: 'myg-wc-grid',
+            x_expand: true,
         });
         this.add_child(this._grid);
 
@@ -85,6 +88,7 @@ class WorldClocks extends St.BoxLayout {
             const cell = new St.BoxLayout({
                 vertical: true,
                 style_class: 'myg-wc-cell',
+                x_expand: true,   // les colonnes se partagent la largeur
             });
 
             const head = new St.BoxLayout({style_class: 'myg-wc-head'});
