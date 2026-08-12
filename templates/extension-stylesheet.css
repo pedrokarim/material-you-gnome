@@ -598,17 +598,22 @@
 
 /* Bandeau de profil : la bannière en fond, un dégradé par-dessus pour que le
    texte reste lisible quelle que soit l'image choisie par l'utilisateur. */
-/* Pas de fond : l'image et le dégradé couvrent la zone. Un fond plus clair que
-   la fin du dégradé dépassait aux angles arrondis en un liseré visible. */
+/* Pas de fond : l'image et le dégradé couvrent la zone.
+
+   Seul le HAUT est arrondi. Superposer deux bords arrondis — celui de l'image
+   et celui du voile de dégradé — laissait une frange claire dans les angles
+   inférieurs : deux antialiasages qui se voient l'un à travers l'autre. En bas
+   le dégradé se fond déjà dans la couleur de la carte, un bord droit y est donc
+   invisible, et le liseré disparaît. */
 .myg-anilist-banner {
-    border-radius: 16px;
+    border-radius: 16px 16px 0 0;
 }
 
 .myg-anilist-fade {
     background-gradient-direction: vertical;
     background-gradient-start: rgba(0, 0, 0, 0.15);
     background-gradient-end: {{colors.surface_container.default.hex}};
-    border-radius: 16px;
+    border-radius: 16px 16px 0 0;
 }
 
 .myg-anilist-identity {
