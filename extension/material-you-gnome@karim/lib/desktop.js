@@ -13,6 +13,7 @@
 
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
+import Meta from 'gi://Meta';
 import St from 'gi://St';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
@@ -162,6 +163,35 @@ export class Desktop {
             // alors la bonne place — sous toutes les fenêtres.
             global.window_group.set_child_below_sibling(this._layer, null);
         }
+
+        this._raiseAboveDesktopWindows();
+    }
+
+    /* Les extensions d'icônes de bureau — DING sur Ubuntu — posent une fenêtre
+     * de type DESKTOP qui couvre tout l'écran. Elle est au-dessus du groupe de
+     * fond, donc au-dessus de nos widgets, et intercepte chaque clic : sans ce
+     * relèvement, les boutons du lecteur et les flèches du calendrier ne
+     * reçoivent jamais rien.
+     *
+     * On passe donc au-dessus d'elle, mais toujours sous les fenêtres
+     * ordinaires — les widgets restent du décor de bureau, pas une surflottante.
+     */
+    _raiseAboveDesktopWindows() {
+        let topmost = null;
+
+        for (const actor of global.get_window_actors()) {
+            const window = actor.meta_window;
+            if (window?.get_window_type() !== Meta.WindowType.DESKTOP)
+                continue;
+            if (actor.get_parent() !== global.window_group)
+                continue;
+            // get_window_actors() rend les acteurs dans l'ordre d'empilement :
+            // le dernier trouvé est le plus haut.
+            topmost = actor;
+        }
+
+        if (topmost)
+            global.window_group.set_child_above_sibling(this._layer, topmost);
     }
 
     /* Les notifications de taille arrivent en rafale pendant la mise en page :
