@@ -58,11 +58,16 @@ export const MprisWatcher = GObject.registerClass({
             return null;
 
         const artistRaw = meta['xesam:artist']?.deepUnpack() ?? [];
-        const artist = Array.isArray(artistRaw) ? artistRaw.join(', ') : String(artistRaw);
+        const artists = (Array.isArray(artistRaw) ? artistRaw : [String(artistRaw)])
+            .filter(Boolean);
 
         return {
             title,
-            artist,
+            // `artist` sert à l'affichage, `artists` aux recherches : les
+            // catalogues indexent par artiste principal, pas par la liste
+            // concaténée.
+            artist: artists.join(', '),
+            artists,
             album: meta['xesam:album']?.deepUnpack() ?? '',
             artUrl: meta['mpris:artUrl']?.deepUnpack() ?? '',
             // mpris:length est en microsecondes.

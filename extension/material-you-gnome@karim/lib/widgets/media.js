@@ -26,6 +26,11 @@ const ART_SIZE = 72;
 const LYRIC_LINES = 5;
 const LYRIC_CONTEXT = Math.floor(LYRIC_LINES / 2);
 
+/* `subtitles_off` de Material Symbols Rounded, relevé dans la cmap de la police
+ * plutôt qu'écrit en ligature : un codepoint absent donne un glyphe manquant,
+ * une ligature non résolue afficherait le mot en toutes lettres. */
+const NO_LYRICS_GLYPH = '\uEF72';
+
 export const MediaCard = GObject.registerClass(
 class MediaCard extends St.BoxLayout {
     _init(extension) {
@@ -79,6 +84,19 @@ class MediaCard extends St.BoxLayout {
         controls.add_child(this._prev);
         controls.add_child(this._play);
         controls.add_child(this._next);
+
+        // Marqueur « pas de paroles » : au bout de la rangée de transport
+        // plutôt que sur sa propre ligne, où il consommait toute une hauteur
+        // pour une icône. Sans lui, la carte se contente de rétrécir et on ne
+        // sait pas si la recherche est en cours ou si elle n'a rien donné.
+        this._noLyrics = new St.Label({
+            text: NO_LYRICS_GLYPH,
+            style_class: 'myg-media-nolyrics',
+            y_align: Clutter.ActorAlign.CENTER,
+            visible: false,
+        });
+        controls.add_child(this._noLyrics);
+
         text.add_child(controls);
 
         row.add_child(text);
@@ -240,14 +258,19 @@ class MediaCard extends St.BoxLayout {
      * paroles restent vides plutôt que masquées : la carte garde une hauteur
      * stable, sinon elle sautille à chaque vers. */
     _syncLyrics() {
-        const lines = this._settings.get_boolean('show-lyrics')
-            ? this._lyrics.lines
-            : null;
+        const enabled = this._settings.get_boolean('show-lyrics');
+        const lines = enabled ? this._lyrics.lines : null;
+
         if (!lines) {
             this._lyricsBox.visible = false;
+            // Le marqueur ne s'affiche que si l'on a vraiment cherché : réglage
+            // actif, piste en cours, et recherche terminée.
+            this._noLyrics.visible =
+                enabled && Boolean(this._watcher.track) && this._lyrics.settled;
             return;
         }
 
+        this._noLyrics.visible = false;
         const current = this._lyrics.indexAt(this._watcher.position);
         this._lyricsBox.visible = true;
 

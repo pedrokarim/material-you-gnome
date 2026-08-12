@@ -490,3 +490,12 @@
 .myg-screen-corner {
     -myg-corner-color: #000000;
 }
+
+/* Marqueur « pas de paroles » : discret, il signale que la recherche a abouti
+   sans résultat plutôt que de laisser croire à un chargement sans fin. */
+.myg-media-nolyrics {
+    font-family: 'Material Symbols Rounded';
+    font-size: 1.2em;
+    color: {{colors.on_surface_variant.default.hex}};
+    padding-left: 10px;
+}

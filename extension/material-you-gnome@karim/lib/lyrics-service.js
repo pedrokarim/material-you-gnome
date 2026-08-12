@@ -41,6 +41,7 @@ export const LyricsService = GObject.registerClass({
 
         this._lines = null;    // [{time, text}] trié, ou null
         this._key = null;      // piste pour laquelle _lines est valable
+        this._settled = false; // vrai une fois la recherche terminée
 
         this._session = new Soup.Session();
         this._cancellable = new Gio.Cancellable();
@@ -54,6 +55,12 @@ export const LyricsService = GObject.registerClass({
     /* null si aucune parole synchronisée n'est disponible. */
     get lines() {
         return this._lines;
+    }
+
+    /* Faux tant qu'une recherche est en vol : permet de distinguer « pas encore
+     * cherché » de « cherché, rien trouvé ». */
+    get settled() {
+        return this._settled;
     }
 
     /* Index de la ligne en cours, ou -1 avant la première. */
@@ -85,6 +92,7 @@ export const LyricsService = GObject.registerClass({
 
         this._key = key;
         this._lines = null;
+        this._settled = false;
         this.emit('changed');
 
         const cached = this._readCache(key);
@@ -99,6 +107,7 @@ export const LyricsService = GObject.registerClass({
     _set(key, lines) {
         this._key = key;
         this._lines = lines;
+        this._settled = true;
         this.emit('changed');
     }
 
@@ -111,9 +120,11 @@ export const LyricsService = GObject.registerClass({
             return;
         }
 
+        // Artiste principal seulement : lrclib indexe par artiste crédité en
+        // premier, une chaîne « A, B » ne correspond à rien chez eux.
         const params = query({
             track_name: track.title,
-            artist_name: track.artist,
+            artist_name: track.artists?.[0] ?? track.artist,
             album_name: track.album,
             duration: track.length > 0 ? Math.floor(track.length) : null,
         });
@@ -132,7 +143,8 @@ export const LyricsService = GObject.registerClass({
     /* Repli : les lecteurs web annoncent souvent « Titre - Artiste » dans le
      * titre et rien d'exploitable en artiste, ce qui fait échouer /api/get. */
     _search(track, key) {
-        const params = query({q: `${track.title} ${track.artist}`.trim()});
+        const primary = track.artists?.[0] ?? track.artist;
+        const params = query({q: `${track.title} ${primary}`.trim()});
 
         this._get(`https://lrclib.net/api/search?${params}`, json => {
             const hit = Array.isArray(json)
