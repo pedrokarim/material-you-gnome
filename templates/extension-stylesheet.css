@@ -481,3 +481,28 @@
     background-color: {{colors.primary_container.default.hex}};
     color: {{colors.on_primary_container.default.hex}};
 }
+
+/* --- Horloge « pixel » (variante) ------------------------------------------- */
+.myg-pixel {
+    spacing-rows: 0;
+    spacing-columns: 12px;
+}
+
+.myg-pixel-digit {
+    font-size: 4.4em;
+    font-weight: bold;
+    min-width: 78px;
+}
+
+.myg-pixel-digit.hours   { color: {{colors.on_surface.default.hex}}; }
+.myg-pixel-digit.minutes { color: {{colors.primary.default.hex}}; }
+
+/* --- Coins d'écran ---------------------------------------------------------- */
+/* Dessinés en Cairo, qui ne lit pas le CSS : la couleur passe par une propriété
+   maison, comme pour l'horloge festonnée.
+   Noir plutôt qu'une teinte de la palette : le coin imite la bordure de la
+   dalle, pas une surface de l'interface. Avec `surface` il se confondait avec
+   les fonds d'écran sombres. */
+.myg-screen-corner {
+    -myg-corner-color: #000000;
+}

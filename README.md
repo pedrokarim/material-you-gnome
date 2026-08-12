@@ -172,6 +172,7 @@ alloué.
 |---|---|---|
 | Horloge festonnée | `widgets/clock.js` | Cairo, heure locale |
 | Horloge numérique | `widgets/digitalclock.js` | heure locale (variante exclusive) |
+| Horloge en carré | `widgets/pixelclock.js` | heure locale (variante exclusive) |
 | Bulle de citation | `widgets/quote.js` | clé GSettings `quote-text` |
 | Horloges mondiales | `widgets/worldclocks.js` | `GLib.TimeZone`, clé `world-clocks` |
 | Carte média | `widgets/media.js` | MPRIS via `lib/mpris.js` |
@@ -297,8 +298,9 @@ moitié des pages — `HyprlandConfig`, `NiriConfig` — n'a pas de sens ici) :
   qui reste la seule autorité sur la palette. Les dupliquer en GSettings créerait
   un état parallèle capable de diverger de ce qui est réellement appliqué.
 - **Bureau** — chaque widget se coupe indépendamment, style d'horloge
-  (festonnée ou numérique), fuseaux des horloges mondiales, texte de la
-  citation, paroles synchronisées, marge aux bords.
+  (festonnée, numérique ou chiffres en carré), fuseaux des horloges mondiales,
+  texte de la citation, paroles synchronisées, coins d'écran arrondis, marge aux
+  bords.
 - **Barre** — quatre formes, reprises de leur `BarConfig` : **Îlots** (zones
   encastrées), **Continue** (surface pleine), **Flottante** (zones détachées sur
   le fond d'écran) et **Material 3** (seuls les boutons portent une pilule).

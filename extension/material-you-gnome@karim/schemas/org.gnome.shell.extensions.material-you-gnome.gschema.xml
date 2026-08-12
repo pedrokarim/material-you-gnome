@@ -51,6 +51,7 @@
       <choices>
         <choice value="cookie"/>
         <choice value="digital"/>
+        <choice value="pixel"/>
       </choices>
       <default>'cookie'</default>
       <summary>Style d'horloge</summary>
@@ -89,6 +90,17 @@
         proche d'illogical-impulse, au prix du contenu des fenêtres maximisées
         qui transparaît sous la barre.
       </description>
+    </key>
+
+    <key name="screen-corners" type="b">
+      <default>false</default>
+      <summary>Coins d'écran arrondis</summary>
+    </key>
+
+    <key name="screen-corner-radius" type="i">
+      <default>14</default>
+      <range min="4" max="48"/>
+      <summary>Rayon des coins d'écran</summary>
     </key>
 
     <key name="desktop-margin" type="i">

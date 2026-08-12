@@ -15,6 +15,7 @@ import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import {Islands} from './lib/panel-islands.js';
 import {MediaIndicator} from './lib/panel-media.js';
 import {Desktop} from './lib/desktop.js';
+import {ScreenCorners} from './lib/screen-corners.js';
 import {releaseWatcher} from './lib/mpris.js';
 import {releaseWeather} from './lib/weather-service.js';
 import {releaseLyrics} from './lib/lyrics-service.js';
@@ -23,7 +24,7 @@ import {releaseLyrics} from './lib/lyrics-service.js';
  * (#panelActivities, enfants .workspace-dot) depuis que le bouton Activités a
  * été remplacé. En écrire un deuxième le doublait à l'écran ; il est simplement
  * recoloré dans stylesheet.css. */
-const PARTS = [Islands, MediaIndicator, Desktop];
+const PARTS = [Islands, MediaIndicator, Desktop, ScreenCorners];
 
 export default class MaterialYouBarExtension extends Extension {
     enable() {

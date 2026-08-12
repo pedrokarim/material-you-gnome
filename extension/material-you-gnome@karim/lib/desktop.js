@@ -19,6 +19,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {CookieClock} from './widgets/cookieclock.js';
 import {DigitalClock} from './widgets/digitalclock.js';
+import {PixelClock} from './widgets/pixelclock.js';
 import {QuoteBubble} from './widgets/quote.js';
 import {WorldClocks} from './widgets/worldclocks.js';
 import {MediaCard} from './widgets/media.js';
@@ -41,7 +42,7 @@ const WIDGETS = [
 ];
 
 // L'horloge a deux variantes exclusives ; seule la sélectionnée est instanciée.
-const CLOCKS = {cookie: CookieClock, digital: DigitalClock};
+const CLOCKS = {cookie: CookieClock, digital: DigitalClock, pixel: PixelClock};
 
 const GAP = 16;      // écart entre deux widgets d'une même ancre
 

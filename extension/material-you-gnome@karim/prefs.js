@@ -31,6 +31,7 @@ const WIDGETS = [
 const CLOCK_STYLES = [
     ['cookie', 'Cadran festonné'],
     ['digital', 'Numérique'],
+    ['pixel', 'Chiffres en carré'],
 ];
 
 const BAR_STYLES = [
@@ -240,6 +241,26 @@ export default class MaterialYouBarPreferences extends ExtensionPreferences {
         settings.bind('quote-text', quoteRow, 'text', Gio.SettingsBindFlags.DEFAULT);
         quote.add(quoteRow);
         page.add(quote);
+
+        const corners = new Adw.PreferencesGroup({
+            title: 'Écran',
+            description: 'Masque les angles pour imiter une dalle aux bords arrondis.',
+        });
+        const cornersOn = new Adw.SwitchRow({title: 'Coins arrondis'});
+        settings.bind('screen-corners', cornersOn, 'active', Gio.SettingsBindFlags.DEFAULT);
+        corners.add(cornersOn);
+
+        const radius = new Adw.SpinRow({
+            title: 'Rayon',
+            subtitle: 'En pixels',
+            adjustment: new Gtk.Adjustment({
+                lower: 4, upper: 48, step_increment: 2, page_increment: 8,
+            }),
+        });
+        settings.bind('screen-corner-radius', radius, 'value', Gio.SettingsBindFlags.DEFAULT);
+        cornersOn.bind_property('active', radius, 'sensitive', 2 /* SYNC_CREATE */);
+        corners.add(radius);
+        page.add(corners);
 
         const layout = new Adw.PreferencesGroup({title: 'Disposition'});
         const margin = new Adw.SpinRow({
