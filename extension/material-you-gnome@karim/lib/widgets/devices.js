@@ -16,6 +16,7 @@ import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 import St from 'gi://St';
 import Clutter from 'gi://Clutter';
+import Cairo from 'gi://cairo';
 
 const UPOWER = 'org.freedesktop.UPower';
 const UPOWER_PATH = '/org/freedesktop/UPower';
@@ -44,9 +45,91 @@ const ICONS = {
     19: 'audio-headphones-symbolic',
 };
 
+// Anneau de charge : trois paliers suffisent à situer un niveau d'un coup
+// d'œil, un dégradé continu n'apporterait qu'une nuance illisible.
+const RING_SIZE = 46;
+const RING_WIDTH = 5;
+const RING_FONT = 13;
+const LEVEL_LOW = 20;
+const LEVEL_MID = 50;
+
 // État UPower 1 = en charge, 4 = pleine. Les périphériques Bluetooth rapportent
 // souvent 0 (inconnu) : on n'affiche donc l'état que lorsqu'il dit quelque chose.
 const CHARGING = 1;
+
+/* Anneau de niveau. Dessiné en Cairo : St ne sait pas tracer d'arc, et un
+ * dégradé d'images préparées serait figé alors que la palette change à chaque
+ * fond d'écran. */
+const BatteryRing = GObject.registerClass(
+class BatteryRing extends St.DrawingArea {
+    _init(percentage) {
+        super._init({
+            style_class: 'myg-device-ring',
+            width: RING_SIZE,
+            height: RING_SIZE,
+            reactive: false,
+        });
+
+        this._percentage = percentage;
+        this.connect('style-changed', () => this.queue_repaint());
+        this.connect('repaint', () => this._draw());
+    }
+
+    _color(name) {
+        const node = this.get_theme_node();
+        const [found, color] = node.lookup_color(name, false);
+        return found ? color : node.get_foreground_color();
+    }
+
+    _draw() {
+        const cr = this.get_context();
+        const [w, h] = this.get_surface_size();
+        const radius = Math.min(w, h) / 2 - RING_WIDTH / 2;
+        const cx = w / 2;
+        const cy = h / 2;
+
+        const level = this._percentage <= LEVEL_LOW ? '-myg-level-low'
+            : this._percentage <= LEVEL_MID ? '-myg-level-mid'
+            : '-myg-level-high';
+
+        const use = color => cr.setSourceRGBA(
+            color.red / 255, color.green / 255, color.blue / 255, color.alpha / 255);
+
+        cr.setLineWidth(RING_WIDTH);
+
+        // Piste complète en dessous : sans elle, un niveau bas ne se distingue
+        // pas d'un widget qui n'aurait rien dessiné.
+        use(this._color('-myg-level-track'));
+        cr.arc(cx, cy, radius, 0, 2 * Math.PI);
+        cr.stroke();
+
+        // L'arc part de midi et tourne dans le sens horaire, comme une jauge.
+        const sweep = Math.max(0, Math.min(100, this._percentage)) / 100;
+        if (sweep > 0) {
+            use(this._color(level));
+            cr.setLineCap(Cairo.LineCap.ROUND);
+            cr.arc(cx, cy, radius,
+                   -Math.PI / 2,
+                   -Math.PI / 2 + sweep * 2 * Math.PI);
+            cr.stroke();
+        }
+
+        // Le chiffre au centre de l'anneau, pas à côté : c'est ce qui fait lire
+        // l'ensemble comme une jauge plutôt que comme une icône et un nombre.
+        use(this._color('-myg-level-text'));
+        cr.selectFontFace('Readex Pro', Cairo.FontSlant.NORMAL, Cairo.FontWeight.BOLD);
+        cr.setFontSize(RING_FONT);
+
+        const text = String(Math.round(this._percentage));
+        const ext = cr.textExtents(text);
+        cr.moveTo(cx - (ext.width / 2 + ext.xBearing),
+                  cy - (ext.height / 2 + ext.yBearing));
+        cr.showText(text);
+        cr.newPath();   // showText laisse la position courante dans le chemin
+
+        cr.$dispose();
+    }
+});
 
 export const Devices = GObject.registerClass(
 class Devices extends St.BoxLayout {
@@ -191,16 +274,7 @@ class Devices extends St.BoxLayout {
             y_align: Clutter.ActorAlign.CENTER,
         }));
 
-        // Un seuil plutôt qu'un dégradé : on veut repérer d'un coup d'œil ce
-        // qu'il faut recharger.
-        const level = new St.Label({
-            text: `${Math.round(device.percentage)} %`,
-            style_class: device.percentage <= 20
-                ? 'myg-device-level low'
-                : 'myg-device-level',
-            y_align: Clutter.ActorAlign.CENTER,
-        });
-        row.add_child(level);
+        row.add_child(new BatteryRing(device.percentage));
 
         if (device.charging) {
             row.add_child(new St.Icon({

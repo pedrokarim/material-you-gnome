@@ -524,15 +524,17 @@
     color: {{colors.on_surface.default.hex}};
 }
 
-.myg-device-level {
-    font-size: 1em;
-    font-weight: bold;
-    color: {{colors.on_surface.default.hex}};
-}
-
-/* Seuil bas : on veut repérer d'un coup d'œil ce qu'il faut recharger. */
-.myg-device-level.low {
-    color: {{colors.error.default.hex}};
+/* Anneau de niveau, dessiné en Cairo : les couleurs passent par des propriétés
+   maison, comme pour les autres widgets dessinés.
+   Rouge / ambre / vert sont sémantiques, pas décoratifs : ils ne suivent pas la
+   palette du fond d'écran, sans quoi « batterie faible » virerait au vert sur
+   un mur vert. Seule la piste s'accorde au thème. */
+.myg-device-ring {
+    -myg-level-track: {{colors.surface_container_highest.default.hex}};
+    -myg-level-text: {{colors.on_surface.default.hex}};
+    -myg-level-low: #e35b5b;
+    -myg-level-mid: #e8a33d;
+    -myg-level-high: #63c07a;
 }
 
 .myg-device-charging {
