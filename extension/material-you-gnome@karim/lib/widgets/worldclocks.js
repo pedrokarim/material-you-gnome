@@ -15,6 +15,7 @@ import St from 'gi://St';
 import Clutter from 'gi://Clutter';
 
 const COLUMNS = 2;
+const GRID_SPACING = 10;
 const REFRESH_SECONDS = 20;
 
 export const WorldClocks = GObject.registerClass(
@@ -35,8 +36,15 @@ class WorldClocks extends St.BoxLayout {
 
         // La grille doit occuper toute la largeur de la carte : sans expansion
         // elle se tasse à gauche et laisse un vide franc à droite.
+        // L'espacement se pose sur le layout, pas en CSS : Clutter.GridLayout
+        // ne lit pas `spacing-rows` / `spacing-columns`, qui sont des propriétés
+        // de St.BoxLayout. Sans ça les tuiles se touchent.
+        const grid = new Clutter.GridLayout({
+            row_spacing: GRID_SPACING,
+            column_spacing: GRID_SPACING,
+        });
         this._grid = new St.Widget({
-            layout_manager: new Clutter.GridLayout(),
+            layout_manager: grid,
             style_class: 'myg-wc-grid',
             x_expand: true,
         });

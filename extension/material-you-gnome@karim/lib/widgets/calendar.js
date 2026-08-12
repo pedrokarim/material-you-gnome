@@ -49,7 +49,11 @@ class CalendarCard extends St.BoxLayout {
         // la largeur est imposée par la carte média au-dessus. Alignée à
         // gauche, elle laissait un vide franc sur le bord droit.
         this._grid = new St.Widget({
-            layout_manager: new Clutter.GridLayout(),
+            // Même remarque que pour les horloges mondiales : l'espacement d'une
+            // Clutter.GridLayout ne se règle pas en CSS.
+            layout_manager: new Clutter.GridLayout({
+                row_spacing: 4, column_spacing: 4,
+            }),
             style_class: 'myg-cal-grid',
             x_align: Clutter.ActorAlign.CENTER,
         });

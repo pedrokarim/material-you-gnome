@@ -319,11 +319,6 @@
     padding-bottom: 14px;
 }
 
-.myg-cal-grid {
-    spacing-rows: 4px;
-    spacing-columns: 4px;
-}
-
 .myg-cal-dow {
     font-size: 0.8em;
     color: {{colors.on_surface_variant.default.hex}};
@@ -432,11 +427,6 @@
     font-size: 0.85em;
     color: {{colors.on_surface_variant.default.hex}};
     padding-bottom: 12px;
-}
-
-.myg-wc-grid {
-    spacing-rows: 8px;
-    spacing-columns: 8px;
 }
 
 /* Pas de min-width : la largeur vient de l'expansion, sinon les deux colonnes
