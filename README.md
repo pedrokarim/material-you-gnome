@@ -180,6 +180,8 @@ alloué.
 | Météo | `widgets/weather.js` | Open-Meteo (sans clé) |
 | CPU / RAM / Disque | `widgets/resources.js` | `/proc/stat`, `/proc/meminfo`, GIO |
 | Carte utilisateur | `widgets/usercard.js` | `/proc/uptime`, D-Bus |
+| Appareils connectés | `widgets/devices.js` | UPower |
+| AniList | `widgets/anilist.js` | API GraphQL publique d'AniList |
 
 Un widget masqué ne réserve pas de place : la carte média disparaît quand aucun
 lecteur ne tourne, et la pile se resserre (`notify::visible` déclenche un

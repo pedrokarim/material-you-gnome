@@ -595,3 +595,57 @@
     font-size: 0.82em;
     color: {{colors.on_surface_variant.default.hex}};
 }
+
+/* Bandeau de profil : la bannière en fond, un dégradé par-dessus pour que le
+   texte reste lisible quelle que soit l'image choisie par l'utilisateur. */
+/* Pas de fond : l'image et le dégradé couvrent la zone. Un fond plus clair que
+   la fin du dégradé dépassait aux angles arrondis en un liseré visible. */
+.myg-anilist-banner {
+    border-radius: 16px;
+}
+
+.myg-anilist-fade {
+    background-gradient-direction: vertical;
+    background-gradient-start: rgba(0, 0, 0, 0.15);
+    background-gradient-end: {{colors.surface_container.default.hex}};
+    border-radius: 16px;
+}
+
+.myg-anilist-identity {
+    spacing: 12px;
+    padding: 0 14px 10px 14px;
+}
+
+.myg-anilist-avatar {
+    border-radius: 999px;
+    background-color: {{colors.surface_container_highest.default.hex}};
+}
+
+.myg-anilist-logo {
+    margin-left: 8px;
+}
+
+.myg-anilist-columns {
+    spacing: 14px;
+    padding-top: 10px;
+}
+
+.myg-anilist-column {
+    spacing: 6px;
+    max-width: 214px;
+}
+
+/* Zones cliquables : un simple voile au survol, sans cadre ni relief — les
+   fiches s'ouvrent dans le navigateur, ce ne sont pas des boutons d'action. */
+.myg-anilist-link {
+    border-radius: 12px;
+}
+
+.myg-anilist-link:hover {
+    background-color: {{colors.surface_container_highest.default.hex}};
+}
+
+/* Une série qui diffuse encore se distingue de celles qui sont terminées. */
+.myg-anilist-progress.airing {
+    color: {{colors.primary.default.hex}};
+}

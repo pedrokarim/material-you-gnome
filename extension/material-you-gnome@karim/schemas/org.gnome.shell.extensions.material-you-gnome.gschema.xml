@@ -37,12 +37,12 @@
     <!-- Désactivé par défaut : le tableau de bord commence à être chargé, et
          ce widget interroge un service tiers. -->
     <key name="show-anilist" type="b">
-      <default>false</default>
+      <default>true</default>
       <summary>Afficher les séries AniList en cours</summary>
     </key>
 
     <key name="anilist-user" type="s">
-      <default>''</default>
+      <default>'PedroKarim64'</default>
       <summary>Pseudo AniList</summary>
       <description>Vide, aucune requête n'est émise.</description>
     </key>
@@ -60,7 +60,7 @@
     </key>
 
     <key name="show-worldclocks" type="b">
-      <default>true</default>
+      <default>false</default>
       <summary>Afficher les horloges mondiales</summary>
     </key>
 

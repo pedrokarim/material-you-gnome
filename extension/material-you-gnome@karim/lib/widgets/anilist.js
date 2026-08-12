@@ -25,8 +25,11 @@ const ENDPOINT = 'https://graphql.anilist.co';
 // solliciter l'API plus souvent.
 const REFRESH_SECONDS = 1800;
 
-const COVER_W = 40;
-const COVER_H = 56;
+const COVER_W = 34;
+const COVER_H = 48;
+const AVATAR_SIZE = 46;
+const BANNER_H = 96;
+const LOGO_SIZE = 22;
 
 const CACHE_DIR = GLib.build_filenamev(
     [GLib.get_user_cache_dir(), 'material-you-gnome', 'anilist']);
@@ -34,19 +37,31 @@ const CACHE_DIR = GLib.build_filenamev(
 /* Les alias `anime:` et `manga:` évitent deux allers-retours. On ne demande que
  * les champs affichés : AniList applique un quota, autant ne pas le gaspiller. */
 const QUERY = `query ($name: String) {
+  User(name: $name) {
+    name
+    siteUrl
+    avatar { large }
+    bannerImage
+    statistics { anime { count } manga { count } }
+  }
   anime: MediaListCollection(userName: $name, type: ANIME, status: CURRENT) {
     lists { entries { progress updatedAt
-      media { title { romaji english } episodes coverImage { medium } } } }
+      media { title { romaji english } episodes siteUrl coverImage { medium }
+              nextAiringEpisode { episode timeUntilAiring } } } }
   }
   manga: MediaListCollection(userName: $name, type: MANGA, status: CURRENT) {
     lists { entries { progress updatedAt
-      media { title { romaji english } chapters coverImage { medium } } } }
+      media { title { romaji english } chapters siteUrl coverImage { medium } } } }
   }
 }`;
 
 export const AniList = GObject.registerClass(
 class AniList extends St.BoxLayout {
     _init(extension) {
+        // Le logo est embarqué plutôt que téléchargé : il ne change pas, et
+        // c'est une requête réseau de moins au démarrage.
+        AniList.logoPath = GLib.build_filenamev([extension.path, 'assets', 'anilist.svg']);
+
         super._init({
             vertical: true,
             style_class: 'myg-card myg-anilist',
@@ -74,6 +89,33 @@ class AniList extends St.BoxLayout {
 
     get anchor() {
         return 'top-right';
+    }
+
+    /* Ouvre une fiche AniList dans le navigateur par défaut. */
+    _open(url) {
+        if (!url)
+            return;
+        try {
+            Gio.AppInfo.launch_default_for_uri(url, null);
+        } catch (e) {
+            logError(e, 'material-you-gnome: ouverture d\'un lien AniList');
+        }
+    }
+
+    /* Habille un contenu d'un bouton plat cliquable. On n'utilise St.Button que
+     * lorsqu'il y a une URL : sans lien, un curseur main serait mensonger. */
+    _linked(child, url, styleClass) {
+        if (!url)
+            return child;
+
+        const button = new St.Button({
+            style_class: styleClass,
+            child,
+            can_focus: true,
+            x_expand: true,
+        });
+        button.connect('clicked', () => this._open(url));
+        return button;
     }
 
     /* --- Réseau ------------------------------------------------------------ */
@@ -125,12 +167,24 @@ class AniList extends St.BoxLayout {
                     progress: entry.progress ?? 0,
                     total: entry.media?.[total] ?? null,
                     cover: entry.media?.coverImage?.medium ?? '',
+                    url: entry.media?.siteUrl ?? '',
+                    airing: entry.media?.nextAiringEpisode ?? null,
                     updated: entry.updatedAt ?? 0,
                     unit,
                 }))
                 .sort((a, b) => b.updated - a.updated);
 
+        const user = data?.User;
+
         return {
+            profile: user ? {
+                name: user.name ?? '',
+                url: user.siteUrl ?? '',
+                avatar: user.avatar?.large ?? '',
+                banner: user.bannerImage ?? '',
+                animeCount: user.statistics?.anime?.count ?? 0,
+                mangaCount: user.statistics?.manga?.count ?? 0,
+            } : null,
             anime: take(data?.anime, 'ép', 'episodes'),
             manga: take(data?.manga, 'ch', 'chapters'),
         };
@@ -138,49 +192,128 @@ class AniList extends St.BoxLayout {
 
     /* --- Affichage ---------------------------------------------------------- */
 
-    _apply({anime = [], manga = []} = {}) {
+    _apply({profile = null, anime = [], manga = []} = {}) {
         const wasVisible = this.visible;
         this.destroy_all_children();
 
-        const count = this._settings.get_int('anilist-count');
-        const user = this._settings.get_string('anilist-user').trim();
-
-        if (anime.length + manga.length === 0) {
+        if (!profile) {
             this.visible = false;
             if (wasVisible)
                 this.notify('visible');
             return;
         }
 
-        // En-tête : le pseudo et le nombre de séries en cours de chaque côté.
-        const header = new St.BoxLayout({style_class: 'myg-anilist-header'});
-        header.add_child(new St.Label({
-            text: user,
-            style_class: 'myg-anilist-user',
-            x_expand: true,
-        }));
-        header.add_child(new St.Label({
-            text: `${anime.length} anime${anime.length > 1 ? 's' : ''}`
-                + ` · ${manga.length} manga${manga.length > 1 ? 's' : ''}`,
-            style_class: 'myg-anilist-counts',
-        }));
-        this.add_child(header);
-
-        for (const [label, entries] of [['Animes', anime], ['Mangas', manga]]) {
-            if (!entries.length)
-                continue;
-
-            this.add_child(new St.Label({
-                text: label,
-                style_class: 'myg-anilist-section',
-            }));
-            for (const entry of entries.slice(0, count))
-                this.add_child(this._row(entry));
-        }
+        this.add_child(this._header(profile));
+        this.add_child(this._columns(anime, manga));
 
         this.visible = true;
         if (!wasVisible)
             this.notify('visible');
+    }
+
+    /* Bandeau : la bannière en fond, un dégradé par-dessus pour que le texte
+     * reste lisible quelle que soit l'image, puis l'avatar et les compteurs.
+     * Le dégradé descend vers la couleur de la carte, ce qui fond le bandeau
+     * dans le reste au lieu de le poser comme une vignette rapportée. */
+    _header(profile) {
+        const header = new St.Widget({
+            style_class: 'myg-anilist-banner',
+            layout_manager: new Clutter.BinLayout(),
+            height: BANNER_H,
+        });
+
+        if (profile.banner)
+            this._loadImage(header, profile.banner, 'banner');
+
+        header.add_child(new St.Widget({
+            style_class: 'myg-anilist-fade',
+            x_expand: true,
+            y_expand: true,
+        }));
+
+        const row = new St.BoxLayout({
+            style_class: 'myg-anilist-identity',
+            y_align: Clutter.ActorAlign.END,
+            x_expand: true,
+        });
+
+        const avatar = new St.Widget({
+            style_class: 'myg-anilist-avatar',
+            width: AVATAR_SIZE,
+            height: AVATAR_SIZE,
+            y_align: Clutter.ActorAlign.CENTER,
+        });
+        if (profile.avatar)
+            this._loadImage(avatar, profile.avatar, 'avatar');
+        row.add_child(avatar);
+
+        const text = new St.BoxLayout({
+            vertical: true,
+            y_align: Clutter.ActorAlign.CENTER,
+            x_expand: true,
+        });
+        text.add_child(new St.Label({
+            text: profile.name,
+            style_class: 'myg-anilist-user',
+        }));
+        text.add_child(new St.Label({
+            text: `${profile.animeCount} animes · ${profile.mangaCount} mangas`,
+            style_class: 'myg-anilist-counts',
+        }));
+        row.add_child(text);
+
+        // Logo de la marque, au bout de la rangée. Dans le BinLayout du
+        // bandeau, `x_align: END` ne le poussait pas au bord ; ici c'est
+        // l'expansion du bloc texte qui s'en charge, ce qui marche.
+        // Il garde sa couleur d'origine : c'est une identité, pas un élément
+        // d'interface à accorder à la palette.
+        const logo = new St.Widget({
+            style_class: 'myg-anilist-logo',
+            width: LOGO_SIZE,
+            height: LOGO_SIZE,
+            y_align: Clutter.ActorAlign.CENTER,
+        });
+        logo.set_style(
+            `background-image: url("file://${AniList.logoPath}"); background-size: contain;`);
+        row.add_child(logo);
+
+        header.add_child(this._linked(row, profile.url, 'myg-anilist-link'));
+        return header;
+    }
+
+    /* Deux colonnes plutôt qu'une liste : on compare d'un coup d'œil où en sont
+     * les deux côtés. Les titres sont coupés — à cette largeur, aucun ne tient
+     * en entier, et tronquer vaut mieux que rétrécir la police. */
+    _columns(anime, manga) {
+        const count = this._settings.get_int('anilist-count');
+        const columns = new St.BoxLayout({style_class: 'myg-anilist-columns'});
+
+        for (const [label, entries] of [['Animes', anime], ['Mangas', manga]]) {
+            const column = new St.BoxLayout({
+                vertical: true,
+                style_class: 'myg-anilist-column',
+                x_expand: true,
+            });
+
+            column.add_child(new St.Label({
+                text: label,
+                style_class: 'myg-anilist-section',
+            }));
+
+            if (!entries.length) {
+                column.add_child(new St.Label({
+                    text: '—',
+                    style_class: 'myg-anilist-progress',
+                }));
+            }
+
+            for (const entry of entries.slice(0, count))
+                column.add_child(this._row(entry));
+
+            columns.add_child(column);
+        }
+
+        return columns;
     }
 
     _row(entry) {
@@ -193,7 +326,7 @@ class AniList extends St.BoxLayout {
             width: COVER_W,
             height: COVER_H,
         });
-        this._loadCover(cover, entry.cover);
+        this._loadImage(cover, entry.cover);
         row.add_child(cover);
 
         const text = new St.BoxLayout({
@@ -212,26 +345,54 @@ class AniList extends St.BoxLayout {
         text.add_child(title);
 
         // Le total est absent des séries en cours de diffusion : on ne prétend
-        // pas le connaître.
+        // pas le connaître. Quand AniList annonce la prochaine diffusion, on
+        // l'ajoute — c'est l'information qu'on cherche sur une série suivie.
+        let progress = `${entry.unit} ${entry.progress}`;
+        if (entry.total)
+            progress += ` / ${entry.total}`;
+
+        const soon = this._countdown(entry.airing);
+        if (soon)
+            progress += ` · ${soon}`;
+
         text.add_child(new St.Label({
-            text: `${entry.unit} ${entry.progress}${entry.total ? ` / ${entry.total}` : ''}`,
-            style_class: 'myg-anilist-progress',
+            text: progress,
+            style_class: entry.airing ? 'myg-anilist-progress airing' : 'myg-anilist-progress',
         }));
 
         row.add_child(text);
-        return row;
+        return this._linked(row, entry.url, 'myg-anilist-link');
     }
 
-    /* Les jaquettes sont mises en cache sous un nom dérivé de l'URL : la liste
-     * est relue toutes les demi-heures, il serait absurde de les retélécharger. */
-    _loadCover(actor, url) {
+    /* « dans 3 j » ou « dans 5 h » : au-delà d'une journée, l'heure exacte
+     * n'apporte rien, et en deçà le nombre de jours vaudrait toujours zéro. */
+    _countdown(airing) {
+        if (!airing?.timeUntilAiring || airing.timeUntilAiring <= 0)
+            return null;
+
+        const hours = Math.floor(airing.timeUntilAiring / 3600);
+        if (hours < 1)
+            return 'imminent';
+        if (hours < 24)
+            return `dans ${hours} h`;
+        return `dans ${Math.floor(hours / 24)} j`;
+    }
+
+    /* Jaquettes, avatar et bannière passent tous par ici. Le cache porte un nom
+     * dérivé de l'URL : la liste est relue toutes les demi-heures, il serait
+     * absurde de retélécharger les mêmes images. */
+    _loadImage(actor, url, mode = 'cover') {
         if (!url)
             return;
 
         const target = GLib.build_filenamev([CACHE_DIR, this._hash(url)]);
 
+        // La bannière est cadrée en `cover` comme le reste : `contain`
+        // laisserait des bandes selon le ratio de l'image choisie par
+        // l'utilisateur.
         const paint = () => actor.set_style(
             `background-image: url("file://${target}"); background-size: cover;`);
+        void mode;
 
         if (GLib.file_test(target, GLib.FileTest.EXISTS)) {
             paint();
