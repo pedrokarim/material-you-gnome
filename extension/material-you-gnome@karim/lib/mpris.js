@@ -23,6 +23,10 @@ const OBJECT_PATH = '/org/mpris/MediaPlayer2';
 // synchroniser des paroles, et on ne sonde que pendant la lecture.
 const POSITION_POLL_SECONDS = 1;
 
+// Séparateurs de crédits multiples. Volontairement conservateur : pas de « x »
+// ni de « and », qui apparaissent dans de vrais noms de groupes.
+const SEPARATORS = /\s*(?:,|;|&|\bfeat\.?\b|\bft\.?\b)\s*/i;
+
 export const MprisWatcher = GObject.registerClass({
     Signals: {'changed': {}, 'position': {}},
 }, class MprisWatcher extends GObject.Object {
@@ -58,15 +62,23 @@ export const MprisWatcher = GObject.registerClass({
             return null;
 
         const artistRaw = meta['xesam:artist']?.deepUnpack() ?? [];
-        const artists = (Array.isArray(artistRaw) ? artistRaw : [String(artistRaw)])
+        const credited = (Array.isArray(artistRaw) ? artistRaw : [String(artistRaw)])
             .filter(Boolean);
+
+        // Les navigateurs ne renseignent souvent qu'une seule entrée contenant
+        // tous les artistes — « spring gang, Penny Lane ». On la redécoupe :
+        // les catalogues de paroles indexent par artiste, pas par crédit
+        // complet.
+        const artists = [...new Set(
+            credited.flatMap(entry => entry.split(SEPARATORS))
+                .map(name => name.trim())
+                .filter(Boolean))];
 
         return {
             title,
-            // `artist` sert à l'affichage, `artists` aux recherches : les
-            // catalogues indexent par artiste principal, pas par la liste
-            // concaténée.
-            artist: artists.join(', '),
+            // `artist` reste le crédit tel qu'annoncé, pour l'affichage ;
+            // `artists` est la liste éclatée, pour les recherches.
+            artist: credited.join(', '),
             artists,
             album: meta['xesam:album']?.deepUnpack() ?? '',
             artUrl: meta['mpris:artUrl']?.deepUnpack() ?? '',

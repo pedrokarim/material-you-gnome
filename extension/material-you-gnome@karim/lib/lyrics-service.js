@@ -114,30 +114,56 @@ export const LyricsService = GObject.registerClass({
     /* --- Réseau ------------------------------------------------------------- */
 
     _fetch(track, key) {
-        if (!track.title || !track.artist) {
+        const candidates = this._candidates(track);
+        if (!track.title || !candidates.length) {
             this._writeCache(key, NOT_FOUND);
             this._set(key, null);
             return;
         }
 
-        // Artiste principal seulement : lrclib indexe par artiste crédité en
-        // premier, une chaîne « A, B » ne correspond à rien chez eux.
+        this._tryArtist(track, key, candidates, 0);
+    }
+
+    /* Le crédit complet d'abord — certaines pistes sont indexées ainsi — puis
+     * chaque artiste pris isolément. Mesuré sur une piste réelle : « spring
+     * gang, Penny Lane » ne donne rien, « spring gang » trouve les paroles. */
+    _candidates(track) {
+        const list = [];
+        if (track.artist)
+            list.push(track.artist);
+        for (const name of track.artists ?? []) {
+            if (!list.includes(name))
+                list.push(name);
+        }
+        return list;
+    }
+
+    /* Essais en cascade : on s'arrête au premier artiste qui donne des paroles
+     * synchronisées, et on bascule sur la recherche libre si aucun ne répond. */
+    _tryArtist(track, key, candidates, index) {
+        if (index >= candidates.length) {
+            this._search(track, key);
+            return;
+        }
+
         const params = query({
             track_name: track.title,
-            artist_name: track.artists?.[0] ?? track.artist,
+            artist_name: candidates[index],
             album_name: track.album,
             duration: track.length > 0 ? Math.floor(track.length) : null,
         });
+
+        const next = () => this._tryArtist(track, key, candidates, index + 1);
 
         this._get(`https://lrclib.net/api/get?${params}`, json => {
             const synced = json?.syncedLyrics;
             if (synced) {
                 this._writeCache(key, synced);
                 this._set(key, this._parse(synced));
-                return;
+            } else {
+                next();
             }
-            this._search(track, key);
-        }, () => this._search(track, key));
+        }, next);
     }
 
     /* Repli : les lecteurs web annoncent souvent « Titre - Artiste » dans le
