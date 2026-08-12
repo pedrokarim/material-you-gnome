@@ -30,6 +30,9 @@ import {Resources} from './widgets/resources.js';
 import {UserCard} from './widgets/usercard.js';
 import {Devices} from './widgets/devices.js';
 import {AniList} from './widgets/anilist.js';
+import {Notes} from './widgets/notes.js';
+import {Pomodoro} from './widgets/pomodoro.js';
+import {Network} from './widgets/network.js';
 
 // L'ordre fait la pile : chaque ancre empile ses widgets de haut en bas.
 // Chaque entrée porte la clé GSettings qui décide de sa présence.
@@ -38,8 +41,11 @@ const WIDGETS = [
     ['show-quote', QuoteBubble],
     ['show-media', MediaCard],
     ['show-calendar', CalendarCard],
+    ['show-pomodoro', Pomodoro],
+    ['show-notes', Notes],
     ['show-weather', Weather],         // colonne droite
     ['show-resources', Resources],
+    ['show-network', Network],
     ['show-devices', Devices],
     ['show-anilist', AniList],
     ['show-worldclocks', WorldClocks],

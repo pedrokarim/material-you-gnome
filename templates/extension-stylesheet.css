@@ -255,7 +255,9 @@
    gauche ; sans largeur partagée, leurs bords droits partent en escalier
    (424 px contre 316 px avant unification). */
 .myg-media-card,
-.myg-calendar {
+.myg-calendar,
+.myg-notes,
+.myg-pomodoro {
     min-width: 372px;
     max-width: 372px;
 }
@@ -663,4 +665,120 @@
 
 .myg-anilist-identity-link:hover {
     background-color: rgba(255, 255, 255, 0.10);
+}
+
+/* --- Bloc-notes -------------------------------------------------------------- */
+.myg-notes {
+    spacing: 10px;
+}
+
+.myg-notes-header {
+    spacing: 8px;
+}
+
+.myg-notes-icon {
+    icon-size: 16px;
+    color: {{colors.primary.default.hex}};
+}
+
+.myg-notes-title {
+    font-size: 0.9em;
+    font-weight: bold;
+    color: {{colors.on_surface_variant.default.hex}};
+}
+
+/* Le champ est creusé dans la carte plutôt que posé dessus : c'est une zone de
+   saisie, pas une seconde carte. */
+.myg-notes-entry {
+    background-color: {{colors.surface_container_highest.default.hex}};
+    color: {{colors.on_surface.default.hex}};
+    border-radius: 14px;
+    padding: 10px 12px;
+    min-height: 84px;
+    font-size: 0.95em;
+}
+
+.myg-notes-entry StLabel.hint-text {
+    color: {{colors.on_surface_variant.default.hex}};
+}
+
+/* --- Pomodoro ---------------------------------------------------------------- */
+.myg-pomodoro {
+    spacing: 8px;
+}
+
+.myg-pomodoro-header {
+    spacing: 8px;
+}
+
+.myg-pomodoro-phase {
+    font-size: 0.9em;
+    font-weight: bold;
+    color: {{colors.on_surface_variant.default.hex}};
+}
+
+.myg-pomodoro-cycles {
+    font-size: 0.85em;
+    color: {{colors.primary.default.hex}};
+}
+
+/* Le chiffre porte la carte : c'est la seule chose qu'on lit de loin. */
+.myg-pomodoro-time {
+    font-size: 2.6em;
+    font-weight: bold;
+    color: {{colors.on_surface.default.hex}};
+    padding: 2px 0 6px 0;
+}
+
+/* La pause se distingue au coup d'œil, sans avoir à lire le libellé. */
+.myg-pomodoro-time.break {
+    color: {{colors.primary.default.hex}};
+}
+
+.myg-pomodoro-controls {
+    spacing: 8px;
+}
+
+.myg-pomodoro-button {
+    color: {{colors.on_primary_container.default.hex}};
+    background-color: {{colors.primary_container.default.hex}};
+    border-radius: 999px;
+    padding: 8px;
+}
+
+.myg-pomodoro-button:hover {
+    background-color: {{colors.primary.default.hex}};
+    color: {{colors.on_primary.default.hex}};
+}
+
+/* --- Débit réseau ------------------------------------------------------------ */
+/* Colonne de droite : même largeur que la météo, qui la mène. */
+.myg-net {
+    min-width: 470px;
+    max-width: 470px;
+    spacing: 16px;
+}
+
+.myg-net-rate {
+    spacing: 12px;
+}
+
+.myg-net-glyph {
+    font-family: 'Material Symbols Rounded';
+    font-size: 1.5em;
+    color: {{colors.on_primary_container.default.hex}};
+    background-color: {{colors.primary_container.default.hex}};
+    border-radius: 999px;
+    padding: 8px 10px;
+}
+
+.myg-net-value {
+    font-size: 1.15em;
+    font-weight: bold;
+    color: {{colors.on_surface.default.hex}};
+}
+
+.myg-net-label {
+    font-size: 0.8em;
+    color: {{colors.on_surface_variant.default.hex}};
 }

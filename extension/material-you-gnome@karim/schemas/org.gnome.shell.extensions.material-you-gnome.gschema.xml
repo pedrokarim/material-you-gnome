@@ -64,6 +64,43 @@
       <summary>Afficher les horloges mondiales</summary>
     </key>
 
+    <!-- Désactivé par défaut : plusieurs indicateurs de barre très répandus,
+         « system-monitor » en tête, affichent déjà ce débit. -->
+    <key name="show-network" type="b">
+      <default>false</default>
+      <summary>Afficher le débit réseau</summary>
+    </key>
+
+    <key name="show-notes" type="b">
+      <default>false</default>
+      <summary>Afficher le bloc-notes</summary>
+    </key>
+
+    <!-- Le texte vit ici plutôt que dans un fichier : le widget et le panneau
+         de réglages l'éditent alors tous les deux, sans deux sources à
+         réconcilier. -->
+    <key name="notes-text" type="s">
+      <default>''</default>
+      <summary>Contenu du bloc-notes</summary>
+    </key>
+
+    <key name="show-pomodoro" type="b">
+      <default>false</default>
+      <summary>Afficher le minuteur pomodoro</summary>
+    </key>
+
+    <key name="pomodoro-work" type="i">
+      <default>25</default>
+      <range min="1" max="120"/>
+      <summary>Durée d'une session de travail, en minutes</summary>
+    </key>
+
+    <key name="pomodoro-break" type="i">
+      <default>5</default>
+      <range min="1" max="60"/>
+      <summary>Durée d'une pause, en minutes</summary>
+    </key>
+
     <!-- « Libellé|Zone IANA ». On n'utilise pas org.gnome.shell.world-clocks :
          cette clé stocke des localisations GWeather sérialisées, pénibles à
          écrire depuis un panneau de préférences. -->

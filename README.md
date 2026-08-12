@@ -194,6 +194,9 @@ alloué.
 | Carte utilisateur | `widgets/usercard.js` | `/proc/uptime`, D-Bus |
 | Appareils connectés | `widgets/devices.js` | UPower |
 | AniList | `widgets/anilist.js` | API GraphQL publique d'AniList |
+| Bloc-notes | `widgets/notes.js` | clé GSettings `notes-text` |
+| Pomodoro | `widgets/pomodoro.js` | horloge monotone, clés `pomodoro-work` / `pomodoro-break` |
+| Débit réseau | `widgets/network.js` | `/proc/net/dev` |
 
 Un widget masqué ne réserve pas de place : la carte média disparaît quand aucun
 lecteur ne tourne, et la pile se resserre (`notify::visible` déclenche un
@@ -313,8 +316,13 @@ moitié des pages — `HyprlandConfig`, `NiriConfig` — n'a pas de sens ici) :
   un état parallèle capable de diverger de ce qui est réellement appliqué.
 - **Bureau** — chaque widget se coupe indépendamment, style d'horloge
   (festonnée, numérique ou chiffres en carré), fuseaux des horloges mondiales,
-  texte de la citation, paroles synchronisées, coins d'écran arrondis, marge aux
-  bords.
+  texte de la citation, contenu du bloc-notes, durées du pomodoro, paroles
+  synchronisées, coins d'écran arrondis, marge aux bords.
+
+  Le bloc-notes est éditable des deux côtés — le widget et le panneau écrivent
+  la même clé. Le doublon est délibéré : le clavier n'atteint pas toujours la
+  couche bureau (voir la limite du survol ci-dessus), le panneau reste alors le
+  chemin qui fonctionne.
 - **Barre** — quatre formes, reprises de leur `BarConfig` : **Îlots** (zones
   encastrées), **Continue** (surface pleine), **Flottante** (zones détachées sur
   le fond d'écran) et **Material 3** (seuls les boutons portent une pilule).

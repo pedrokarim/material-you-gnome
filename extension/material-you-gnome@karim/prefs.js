@@ -28,6 +28,9 @@ const WIDGETS = [
     ['show-worldclocks', 'Horloges mondiales', 'Heure locale et fuseaux choisis'],
     ['show-devices', 'Appareils connectés', 'Batterie des souris, casques et manettes'],
     ['show-anilist', 'AniList', 'Animes et mangas en cours'],
+    ['show-notes', 'Bloc-notes', 'Texte libre, conservé entre les sessions'],
+    ['show-pomodoro', 'Pomodoro', 'Minuteur travail / pause'],
+    ['show-network', 'Débit réseau', 'Réception et envoi, relevés dans /proc/net/dev'],
 ];
 
 const CLOCK_STYLES = [
@@ -264,6 +267,34 @@ export default class MaterialYouBarPreferences extends ExtensionPreferences {
         quote.add(quoteRow);
         page.add(quote);
 
+        page.add(this._notesGroup(settings));
+
+        const pomodoro = new Adw.PreferencesGroup({
+            title: 'Pomodoro',
+            description: 'Les durées s\'appliquent au prochain cycle : '
+                + 'les modifier remet le minuteur à zéro.',
+        });
+        const work = new Adw.SpinRow({
+            title: 'Travail',
+            subtitle: 'En minutes',
+            adjustment: new Gtk.Adjustment({
+                lower: 1, upper: 120, step_increment: 1, page_increment: 5,
+            }),
+        });
+        settings.bind('pomodoro-work', work, 'value', Gio.SettingsBindFlags.DEFAULT);
+        pomodoro.add(work);
+
+        const pause = new Adw.SpinRow({
+            title: 'Pause',
+            subtitle: 'En minutes',
+            adjustment: new Gtk.Adjustment({
+                lower: 1, upper: 60, step_increment: 1, page_increment: 5,
+            }),
+        });
+        settings.bind('pomodoro-break', pause, 'value', Gio.SettingsBindFlags.DEFAULT);
+        pomodoro.add(pause);
+        page.add(pomodoro);
+
         const corners = new Adw.PreferencesGroup({
             title: 'Écran',
             description: 'Masque les angles pour imiter une dalle aux bords arrondis.',
@@ -297,6 +328,57 @@ export default class MaterialYouBarPreferences extends ExtensionPreferences {
         page.add(layout);
 
         return page;
+    }
+
+    /* Le bloc-notes est doublé ici parce que le clavier n'atteint pas toujours
+     * la couche bureau : une extension d'icônes de bureau (DING sur Ubuntu)
+     * pose une fenêtre qui capte la saisie. Le texte reste alors éditable, quoi
+     * qu'il arrive. */
+    _notesGroup(settings) {
+        const group = new Adw.PreferencesGroup({
+            title: 'Bloc-notes',
+            description: 'Le même texte que dans le widget — modifiable des deux côtés.',
+        });
+
+        // Un Gtk.TextView plutôt qu'une EntryRow : les notes tiennent rarement
+        // sur une ligne, et EntryRow n'en accepte qu'une.
+        const view = new Gtk.TextView({
+            wrap_mode: Gtk.WrapMode.WORD_CHAR,
+            top_margin: 8, bottom_margin: 8, left_margin: 8, right_margin: 8,
+            height_request: 120,
+        });
+        view.add_css_class('card');
+
+        const buffer = view.buffer;
+        buffer.set_text(settings.get_string('notes-text'), -1);
+
+        // Garde contre l'aller-retour : écrire dans GSettings émet `changed`,
+        // qui repose le texte et déplacerait le curseur.
+        let updating = false;
+
+        buffer.connect('changed', () => {
+            if (updating)
+                return;
+            const text = buffer.get_text(
+                buffer.get_start_iter(), buffer.get_end_iter(), false);
+            if (settings.get_string('notes-text') !== text)
+                settings.set_string('notes-text', text);
+        });
+
+        const settingsId = settings.connect('changed::notes-text', () => {
+            const text = settings.get_string('notes-text');
+            const current = buffer.get_text(
+                buffer.get_start_iter(), buffer.get_end_iter(), false);
+            if (current === text)
+                return;
+            updating = true;
+            buffer.set_text(text, -1);
+            updating = false;
+        });
+        view.connect('destroy', () => settings.disconnect(settingsId));
+
+        group.add(view);
+        return group;
     }
 
     /* --- Barre -------------------------------------------------------------- */
