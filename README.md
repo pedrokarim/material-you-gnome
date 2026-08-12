@@ -299,8 +299,14 @@ moitié des pages — `HyprlandConfig`, `NiriConfig` — n'a pas de sens ici) :
 - **Bureau** — chaque widget se coupe indépendamment, style d'horloge
   (festonnée ou numérique), fuseaux des horloges mondiales, texte de la
   citation, paroles synchronisées, marge aux bords.
-- **Barre** — bascule « barre flottante » (fond transparent, ne laissant que les
-  îlots).
+- **Barre** — quatre formes, reprises de leur `BarConfig` : **Îlots** (zones
+  encastrées), **Continue** (surface pleine), **Flottante** (zones détachées sur
+  le fond d'écran) et **Material 3** (seuls les boutons portent une pilule).
+  Plus une bascule « barre flottante » — leur variante *borderless
+  transparent* —, axe indépendant de la forme, comme chez eux.
+
+  Les quatre ne diffèrent que par des marges et des rayons : c'est donc du CSS
+  pur, la classe étant posée sur le panel par `lib/panel-islands.js`.
 - **Système** — équivalent de leur page `HyprlandConfig`, qui existe parce que
   Hyprland n'a aucune application de réglages. GNOME en a une : cette page ne
   réinvente donc rien, elle rassemble au même endroit ce qui est réparti dans

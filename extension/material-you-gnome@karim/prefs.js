@@ -33,6 +33,13 @@ const CLOCK_STYLES = [
     ['digital', 'Numérique'],
 ];
 
+const BAR_STYLES = [
+    ['islands', 'Îlots', 'Zones encastrées, séparées les unes des autres'],
+    ['hug', 'Continue', 'La barre est une surface pleine'],
+    ['float', 'Flottante', 'Zones détachées sur le fond d\'écran'],
+    ['m3', 'Material 3', 'Seuls les boutons portent une pilule'],
+];
+
 const MODES = [
     ['', 'Suivre le réglage GNOME'],
     ['light', 'Clair'],
@@ -258,6 +265,23 @@ export default class MaterialYouBarPreferences extends ExtensionPreferences {
         });
 
         const group = new Adw.PreferencesGroup({title: 'Apparence'});
+
+        const style = new Adw.ComboRow({
+            title: 'Forme',
+            model: Gtk.StringList.new(BAR_STYLES.map(([, label]) => label)),
+        });
+        const styleKeys = BAR_STYLES.map(([key]) => key);
+        const syncSubtitle = () => {
+            style.subtitle = BAR_STYLES[style.selected][2];
+        };
+        style.selected = Math.max(0, styleKeys.indexOf(settings.get_string('bar-style')));
+        syncSubtitle();
+        style.connect('notify::selected', () => {
+            settings.set_string('bar-style', styleKeys[style.selected]);
+            syncSubtitle();
+        });
+        group.add(style);
+
         const floating = new Adw.SwitchRow({
             title: 'Barre flottante',
             subtitle: 'Fond transparent, ne laissant que les îlots. '

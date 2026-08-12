@@ -19,6 +19,9 @@ const EMPTY_CLASS = 'myg-island-empty';
 
 const BOXES = ['_leftBox', '_centerBox', '_rightBox'];
 
+// Les quatre formes de leur BarConfig : Hug, Float, Islands, M3.
+const BAR_STYLES = ['hug', 'float', 'islands', 'm3'];
+
 export class Islands {
     constructor(extension) {
         this._extension = extension;
@@ -33,7 +36,10 @@ export class Islands {
 
         this._settingsId = this._settings.connect(
             'changed::floating-panel', () => this._syncFloating());
+        this._styleId = this._settings.connect(
+            'changed::bar-style', () => this._syncStyle());
         this._syncFloating();
+        this._syncStyle();
 
         for (const name of BOXES) {
             const box = Main.panel[name];
@@ -51,6 +57,16 @@ export class Islands {
             this._signals.push([box, id]);
             this._boxes.push(box);
         }
+    }
+
+    /* La forme est portée par une classe sur le panel, pas par du JS : les
+     * quatre variantes ne diffèrent que par des marges et des rayons, et le
+     * CSS généré sait déjà les exprimer. */
+    _syncStyle() {
+        for (const style of BAR_STYLES)
+            Main.panel.remove_style_class_name(`myg-bar-${style}`);
+        Main.panel.add_style_class_name(
+            `myg-bar-${this._settings.get_string('bar-style')}`);
     }
 
     /* Le fond du panel vient de la feuille de style générée ; on ne peut pas la
@@ -74,11 +90,15 @@ export class Islands {
     }
 
     disable() {
-        if (this._settingsId) {
-            this._settings.disconnect(this._settingsId);
-            this._settingsId = 0;
+        for (const prop of ['_settingsId', '_styleId']) {
+            if (this[prop]) {
+                this._settings.disconnect(this[prop]);
+                this[prop] = 0;
+            }
         }
         Main.panel.set_style(null);
+        for (const style of BAR_STYLES)
+            Main.panel.remove_style_class_name(`myg-bar-${style}`);
 
         for (const [obj, id] of this._signals)
             obj.disconnect(id);

@@ -52,6 +52,42 @@
     color: {{colors.on_primary_container.default.hex}};
 }
 
+/* --- Formes de barre --------------------------------------------------------
+ * Les quatre variantes de leur BarConfig. Elles ne diffèrent que par des marges
+ * et des rayons, d'où un traitement purement CSS : la classe est posée sur le
+ * panel par lib/panel-islands.js.
+ */
+
+/* Hug — la barre est une surface continue, les zones s'y fondent. */
+#panel.myg-bar-hug .myg-island {
+    margin-top: 0;
+    margin-bottom: 0;
+    border-radius: 8px;
+}
+
+/* Float — la barre disparaît, les zones flottent sur le fond d'écran. */
+#panel.myg-bar-float {
+    background-color: transparent;
+}
+
+#panel.myg-bar-float .myg-island {
+    margin-top: 5px;
+    margin-bottom: 5px;
+    border-radius: 999px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+/* M3 — les zones ne peignent rien ; seuls les boutons portent une pilule,
+ * comme leur `paintMaterialPill`. */
+#panel.myg-bar-m3 .myg-island {
+    background-color: transparent;
+}
+
+#panel.myg-bar-m3 .panel-button {
+    border-radius: 999px;
+}
+
 /* --- Pilules de workspaces --------------------------------------------------
  * On recolore l'indicateur natif de GNOME 46 plutôt que d'en ajouter un.
  * Yaru donne la même couleur à tous les points : la distinction actif/inactif

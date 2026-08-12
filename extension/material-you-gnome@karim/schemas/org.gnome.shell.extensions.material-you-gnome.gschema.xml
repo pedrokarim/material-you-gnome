@@ -68,6 +68,19 @@
     </key>
 
     <!-- Barre -->
+    <!-- Les quatre formes de leur BarConfig. Axe indépendant de
+         `floating-panel`, qui correspond à leur borderless « transparent ». -->
+    <key name="bar-style" type="s">
+      <choices>
+        <choice value="hug"/>
+        <choice value="float"/>
+        <choice value="islands"/>
+        <choice value="m3"/>
+      </choices>
+      <default>'islands'</default>
+      <summary>Forme de la barre</summary>
+    </key>
+
     <key name="floating-panel" type="b">
       <default>false</default>
       <summary>Barre flottante</summary>
