@@ -15,6 +15,15 @@ import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 
 const MPRIS_PREFIX = 'org.mpris.MediaPlayer2.';
+
+/* Le même préfixe SANS le point final, pour le filtre `arg0namespace` de
+ * NameOwnerChanged. Le bus refuse la règle si elle se termine par un point
+ * (« is not a valid prefix of a bus name ») — et GDBus avale l'erreur : la
+ * souscription semble posée, mais aucun signal n'arrive jamais. On ne le voyait
+ * pas tant qu'un lecteur tournait déjà au démarrage du Shell ; après un
+ * redémarrage, le Shell part avant le navigateur et la carte média ne
+ * réapparaissait plus. */
+const MPRIS_NAMESPACE = 'org.mpris.MediaPlayer2';
 const PLAYER_IFACE = 'org.mpris.MediaPlayer2.Player';
 const OBJECT_PATH = '/org/mpris/MediaPlayer2';
 
@@ -41,7 +50,7 @@ export const MprisWatcher = GObject.registerClass({
 
         this._nameOwnerId = Gio.DBus.session.signal_subscribe(
             'org.freedesktop.DBus', 'org.freedesktop.DBus', 'NameOwnerChanged',
-            '/org/freedesktop/DBus', MPRIS_PREFIX,
+            '/org/freedesktop/DBus', MPRIS_NAMESPACE,
             Gio.DBusSignalFlags.MATCH_ARG0_NAMESPACE,
             () => this._findPlayer());
 
