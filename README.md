@@ -399,7 +399,7 @@ fenêtres maximisées qui transparaît sous la barre.
 | Ghostty | fichier inclus via `config-file` | complète |
 | GNOME Terminal | `gsettings` sur le profil par défaut | complète |
 | btop | thème `material-you.theme` | complète |
-| VS Code | `workbench.colorCustomizations` mergé via `jq` | complète |
+| VS Code | `workbench.colorCustomizations` mergé via `jq` | complète, **si le thème VS Code est de la même polarité que la palette** |
 
 ## Architecture
 
@@ -417,6 +417,26 @@ wallset
        ├─ apply-gnome-terminal.sh  dconf (GNOME Terminal ne lit aucun fichier)
        └─ apply-vscode.sh          merge jq, sans écraser les réglages perso
 ```
+
+### Pourquoi VS Code n'est pas toujours recoloré
+
+`workbench.colorCustomizations` ne repeint que le châssis et le fond de
+l'éditeur. **Les couleurs de syntaxe restent celles du thème VS Code** — elles
+vivent dans `tokenColors`, que le hook ne touche pas. Poser un fond clair sous
+un thème sombre donne donc du texte sombre sur fond clair pour l'interface, et
+du texte pensé pour le noir sur ce même fond clair dans le code : illisible.
+
+Le hook lit donc l'`uiTheme` du thème actif — dans le `package.json` de
+l'extension qui le fournit, seule source fiable, le nom ne disant rien de la
+polarité — et retire son injection quand elle ne correspond pas au mode de la
+palette, en remettant `settings.json` dans l'état d'avant la première
+exécution.
+
+Pour que VS Code suive vraiment le fond d'écran, il faut donc que son thème
+suive le mode de GNOME. Son réglage `window.autoDetectColorScheme`, avec
+`workbench.preferredLightColorTheme` et `preferredDarkColorTheme`, fait
+exactement ça — le projet ne l'active pas d'office : c'est un choix de thème,
+pas une couleur.
 
 ### Pourquoi copier Yaru plutôt que le patcher
 
